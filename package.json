@@ -1,0 +1,28 @@
+{
+  "name": "somegame",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "serve": "serve --single --port 8080 public",
+    "dev-serve": "webpack-dev-server --open",
+    "build": "webpack --progress",
+    "watch": "webpack --progress --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.24.0",
+    "babel-loader": "^6.4.1",
+    "babel-preset-es2015": "^6.24.0",
+    "babel-preset-stage-0": "^6.22.0",
+    "serve": "^5.1.1",
+    "webpack": "^2.3.2",
+    "webpack-dev-server": "^2.4.2"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "twgl.js": "^3.2.2"
+  }
+}
