@@ -8933,6 +8933,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 const mat4 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.m4;
+const vec3 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.v3;
 
 // Class imports
 
@@ -8964,7 +8965,7 @@ class Game {
     this.sceneSettings = {
       projection: {
         fov: 30 * Math.PI / 180,
-        aspectRatio: this.gl.canvas.clientWidth / this.gl.canvas.clientHeight,
+        aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
       },
@@ -9020,8 +9021,10 @@ class Game {
 
     this.sharedUniforms.u_projection = projection;
     this.sharedUniforms.u_view = view;
-    this.sharedUniforms.u_model = mat4.rotateX(this.sharedUniforms.u_model, Math.sin(this.time / 100) * 0.01);
-    this.sharedUniforms.u_model = mat4.rotateY(this.sharedUniforms.u_model, Math.sin(this.time / 100) * 0.01);
+
+    this.sharedUniforms.u_model = mat4.identity();
+    this.sharedUniforms.u_model = mat4.multiply(mat4.rotateX(this.sharedUniforms.u_model, this.time * 0.01), mat4.translation(vec3.create(Math.sin(this.time/100),0,0)));
+
 
 
     gl.useProgram(__WEBPACK_IMPORTED_MODULE_2__shaders__["a" /* generic */].program);
@@ -9035,7 +9038,17 @@ class Game {
     requestAnimationFrame(this.render.bind(this));
   }
 
+  handleResize() {
+
+  }
+
+  get aspectRatio() {
+    return this.gl.canvas.clientWidth / this.gl.canvas.clientHeight
+  }
+
   get projection() {
+    this.sceneSettings.projection.aspectRatio = this.aspectRatio;
+
     return mat4.perspective(
         this.sceneSettings.projection.fov,
         this.sceneSettings.projection.aspectRatio,
