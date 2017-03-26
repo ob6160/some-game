@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -8863,6 +8863,127 @@ class Camera {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__renderable__ = __webpack_require__(5);
+
+
+class Level extends __WEBPACK_IMPORTED_MODULE_0__renderable__["a" /* default */] {
+  constructor(gl, width = 10, height = 10) {
+    super(gl);
+
+    this.width = width;
+    this.height = height;
+
+    this.map = [];
+    this.constructMap();
+    this.generateVertices();
+  }
+
+  generateVertices() {
+    this.positionData = {
+      numComponents: 3, data: [],
+    };
+
+    this.indiceData = {
+      numComponents: 3, data: [],
+    };
+
+    this.texCoordData = {
+      numComponents: 2, data: [0,1],
+    }
+
+
+    this.normalData = {
+      numComponents: 2, data: [0,1],
+    }
+
+    let cubeCount = 0;
+
+    for(let i = 0; i < this.width; i++) {
+      for(let j = 0; j < this.height; j++) {
+        let currentTile = this.map[i][j];
+
+        let ii = i * 2;
+        let jj = j * 2;
+
+        if(currentTile === 1) {
+          this.positionData.data = this.positionData.data.concat(this.cubeVerts(ii, jj));
+          this.indiceData.data = this.indiceData.data.concat(this.cubeIndices(cubeCount));
+
+          cubeCount += 24;
+        }
+      }
+    }
+  }
+
+  cubeVerts(i, j) {
+    return [
+      -1.0+i, -1.0, 1.0+j,
+      1.0+i, -1.0, 1.0+j,
+      1.0+i, 1.0, 1.0+j,
+      -1.0+i, 1.0, 1.0+j,
+      1.0+i, -1.0, 1.0+j,
+      1.0+i, -1.0, -1.0+j,
+      1.0+i, 1.0, -1.0+j,
+      1.0+i, 1.0, 1.0+j,
+      1.0+i, -1.0, -1.0+j,
+      -1.0+i, -1.0, -1.0+j,
+      -1.0+i, 1.0, -1.0+j,
+      1.0+i, 1.0, -1.0+j,
+      -1.0+i, -1.0, -1.0+j,
+      -1.0+i, -1.0, 1.0+j,
+      -1.0+i, 1.0, 1.0+j,
+      -1.0+i, 1.0, -1.0+j,
+      -1.0+i, 1.0, 1.0+j,
+      1.0+i, 1.0, 1.0+j,
+      1.0+i, 1.0, -1.0+j,
+      -1.0+i, 1.0, -1.0+j,
+      1.0+i, -1.0, 1.0+j,
+      -1.0+i, -1.0, 1.0+j,
+      -1.0+i, -1.0, -1.0+j,
+      1.0+i, -1.0, -1.0+j,
+    ];
+  }
+
+  cubeIndices(count) {
+    return [
+      // Font face
+      0+count, 1+count, 2+count, 2+count, 3+count, 0+count,
+      // Right face
+      7+count, 6+count, 5+count, 5+count, 4+count, 7+count,
+      // Back face
+      11+count, 10+count, 9+count, 9+count, 8+count, 11+count,
+      // Left face
+      15+count, 14+count, 13+count, 13+count, 12+count, 15+count,
+      // Top Face
+      19+count, 18+count, 17+count, 17+count, 16+count, 19+count,
+      // Bottom Face
+      23+count, 22+count, 21+count, 21+count, 20+count, 23+count,
+    ];
+  }
+
+  constructMap() {
+    for(let i = 0; i < this.width; i++) {
+      this.map[i] = [];
+      for(let j = 0; j < this.height; j++) {
+        if(Math.random() < 0.3) {
+          this.map[i][j] = 1;
+        } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
+          this.map[i][j] = 1;
+        } else {
+          this.map[i][j] = 0;
+        }
+      }
+    }
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Level;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return generic; });
@@ -8928,7 +9049,7 @@ let generic = new Shader(
 `);
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -8936,13 +9057,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__camera__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__shaders__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__level__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__shaders__ = __webpack_require__(3);
 
 
 const mat4 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.m4;
 const vec3 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.v3;
 
 // Class imports
+
 
 
 // Shader Imports
@@ -8979,7 +9102,7 @@ class Game {
         far: 1000
       },
       camera: {
-        position: [0, 0, -10],
+        position: [0, 0, -60],
         target: [0, 0, 0],
         up: [0, 1, 0]
       }
@@ -8996,7 +9119,7 @@ class Game {
     );
 
     // Shaders
-    __WEBPACK_IMPORTED_MODULE_2__shaders__["a" /* generic */].setup(this.gl, this.sharedUniforms);
+    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].setup(this.gl, this.sharedUniforms);
 
     // Shared Shader Uniforms Init
     this.sharedUniforms = {
@@ -9006,13 +9129,17 @@ class Game {
     };
 
 
-    var arrays = {
-      position: [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1],
-      normal:   [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1],
-      texcoord: [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-      indices:  [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23],
-    };
-    this.bufferInfo = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createBufferInfoFromArrays(this.gl, arrays);
+    // var arrays = {
+    //   position: [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1],
+    //   normal:   [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1],
+    //   texcoord: [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+    //   indices:  [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23],
+    // };
+    // this.bufferInfo = twgl.createBufferInfoFromArrays(this.gl, arrays);
+
+    this.level = new __WEBPACK_IMPORTED_MODULE_2__level__["a" /* default */](this.gl);
+    this.bufferInfo = this.level.constructBuffers(this.gl);
+
   }
 
   render() {
@@ -9023,7 +9150,7 @@ class Game {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
+    // gl.enable(gl.CULL_FACE);
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -9037,12 +9164,10 @@ class Game {
     this.sharedUniforms.u_model = mat4.identity();
     this.sharedUniforms.u_model = mat4.multiply(mat4.rotateX(this.sharedUniforms.u_model, this.time * 0.01), mat4.translation(vec3.create(Math.sin(this.time/100),0,0)));
 
+    gl.useProgram(__WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].program);
 
-
-    gl.useProgram(__WEBPACK_IMPORTED_MODULE_2__shaders__["a" /* generic */].program);
-
-    __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.setBuffersAndAttributes(gl, __WEBPACK_IMPORTED_MODULE_2__shaders__["a" /* generic */].programInfo, this.bufferInfo);
-    __WEBPACK_IMPORTED_MODULE_2__shaders__["a" /* generic */].uniforms = this.sharedUniforms;
+    __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.setBuffersAndAttributes(gl, __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].programInfo, this.bufferInfo);
+    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].uniforms = this.sharedUniforms;
 
     gl.drawElements(gl.TRIANGLES, this.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
 
@@ -9113,6 +9238,49 @@ class Game {
 let gameInstance = new Game();
 gameInstance.setup("c");
 gameInstance.render();
+
+/***/ }),
+/* 5 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
+
+
+class Renderable {
+  constructor() {
+    this.positionData = [];
+    this.texCoordData = [];
+    this.normalData = [];
+    this.indiceData = [];
+  }
+
+  constructBuffers(gl) {
+    this.bufferInfo = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createBufferInfoFromArrays(gl, this.bufferDefinitions);
+    return this.bufferInfo;
+  }
+
+  set bufferData({position = [], texcoord = [], normal = [], indices = []}) {
+    this.positionData = position;
+    this.texCoordData = texcoord;
+    this.normalData = normal;
+    this.indiceData = indices;
+
+    this.constructBuffers(gl);
+  }
+
+  get bufferDefinitions() {
+    return {
+      position: this.positionData,
+      texcoord: this.texCoordData,
+      normal: this.normalData,
+      indices: this.indiceData,
+    }
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Renderable;
+
 
 /***/ })
 /******/ ]);
