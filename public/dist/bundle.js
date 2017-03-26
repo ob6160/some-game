@@ -8840,6 +8840,13 @@ class Camera {
     this.up = up;
   }
 
+  set cameraInfo(info) {
+    let {position, target, up} = info;
+    this.position = position;
+    this.target = target;
+    this.up = up;
+  }
+
   get view() {
     return mat4.inverse(this.lookAt);
   }
@@ -8952,6 +8959,8 @@ class Game {
     this.glContextSetup = {
       preserveDrawingBuffer: true
     };
+
+    this.handleMouseMove = this.handleMouseMove.bind(this);
   }
 
   setup(canvasID) {
@@ -8970,15 +8979,18 @@ class Game {
         far: 1000
       },
       camera: {
-        eye: [0, 0, -10],
+        position: [0, 0, -10],
         target: [0, 0, 0],
         up: [0, 1, 0]
       }
     };
 
+    // DOM Events
+    this.setupEvents();
+
     // Camera
     this.camera = new __WEBPACK_IMPORTED_MODULE_1__camera__["a" /* default */](
-        this.sceneSettings.camera.eye,
+        this.sceneSettings.camera.position,
         this.sceneSettings.camera.target,
         this.sceneSettings.camera.up
     );
@@ -9038,8 +9050,46 @@ class Game {
     requestAnimationFrame(this.render.bind(this));
   }
 
-  handleResize() {
+  setupEvents() {
+    let canvas = this.gl.canvas;
 
+    // Pointerlock support
+    {
+      canvas.requestPointerLock = canvas.requestPointerLock ||
+          canvas.mozRequestPointerLock;
+
+      document.exitPointerLock = document.exitPointerLock ||
+          document.mozExitPointerLock;
+
+      canvas.onclick = () => {
+        canvas.requestPointerLock();
+      };
+
+      // Hook pointer lock state change events for different browsers
+      document.addEventListener('pointerlockchange', this.handlePointerlock.bind(this, canvas), false);
+      document.addEventListener('mozpointerlockchange', this.handlePointerlock.bind(this, canvas), false);
+    }
+  }
+
+  handleMouseMove(e) {
+
+    this.sceneSettings.camera.target[0] -= e.movementX * 0.01;
+    this.sceneSettings.camera.target[1] -= e.movementY * 0.01;
+
+    this.camera.cameraInfo = this.camera;
+  }
+
+  handlePointerlock(canvas) {
+    let boundMove = this.handleMouseMove.bind(this);
+
+    if (document.pointerLockElement === canvas ||
+        document.mozPointerLockElement === canvas) {
+      console.log('The pointer lock status is now locked');
+      document.addEventListener("mousemove", this.handleMouseMove, false);
+    } else {
+      console.log('The pointer lock status is now unlocked');
+      document.removeEventListener("mousemove", this.handleMouseMove, false);
+    }
   }
 
   get aspectRatio() {

@@ -8,6 +8,13 @@ export default class Camera {
     this.up = up;
   }
 
+  set cameraInfo(info) {
+    let {position, target, up} = info;
+    this.position = position;
+    this.target = target;
+    this.up = up;
+  }
+
   get view() {
     return mat4.inverse(this.lookAt);
   }
