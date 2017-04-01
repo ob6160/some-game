@@ -35,15 +35,16 @@ class Game {
 
     this.sceneSettings = {
       projection: {
-        fov: 30 * Math.PI / 180,
+        fov: 65 * Math.PI / 180,
         aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
       },
       camera: {
-        position: [0, 40, -30],
-        target: [0, 0, 0],
-        up: [0, 1, 0]
+        position: [8, 0, 8],
+        target: [0, 0, 100],
+        up: [0, 1, 0],
+        front: [0, 0, 0],
       }
     };
 
@@ -136,9 +137,28 @@ class Game {
   }
 
   handleMouseMove(e) {
+    let front = this.sceneSettings.camera.front;
 
-    this.sceneSettings.camera.target[0] -= e.movementX * 0.01;
-    this.sceneSettings.camera.target[1] -= e.movementY * 0.01;
+    front[0] -= e.movementX * 0.01;
+    front[1] -= e.movementY * 0.01;
+
+    if(front[0] < -Math.PI)
+      front[0] += Math.PI * 2;
+    else if(front[0] > Math.PI)
+      front[0] -= Math.PI * 2;
+
+    if(front[1] < -Math.PI / 2)
+      front[1] = -Math.PI / 2;
+    if(front[1] > Math.PI / 2)
+      front[1] = Math.PI / 2;
+
+    let newLookAt = vec3.create();
+    newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
+    newLookAt[1] = Math.sin(front[1]);
+    newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
+
+
+    vec3.add(this.sceneSettings.camera.position, newLookAt, this.sceneSettings.camera.target);
 
     this.camera.cameraInfo = this.camera;
   }
