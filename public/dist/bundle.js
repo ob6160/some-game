@@ -8863,10 +8863,21 @@ class Camera {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__renderable__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__renderable__ = __webpack_require__(5);
 
 
-class Level extends __WEBPACK_IMPORTED_MODULE_0__renderable__["a" /* default */] {
+
+
+const TOP = 1,
+      BOTTOM = 2,
+      LEFT = 4,
+      RIGHT = 8,
+      BACK = 16,
+      FRONT = 32;
+
+class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */] {
   constructor(gl, width = 10, height = 10) {
     super(gl);
 
@@ -8876,96 +8887,232 @@ class Level extends __WEBPACK_IMPORTED_MODULE_0__renderable__["a" /* default */]
     this.map = [];
     this.constructMap();
     this.generateVertices();
+
+    // TODO: Handle textures properly.
+    this.textures = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createTextures(gl, {
+      // a power of 2 image
+      wall: { src: "wall.jpg", mag: gl.NEAREST },
+      wall2: { src: "wall2.jpg", mag: gl.NEAREST },
+      wall3: { src: "wall3.jpg", mag: gl.NEAREST },
+    });
   }
 
   generateVertices() {
-    this.positionData = {
-      numComponents: 3, data: [],
-    };
-
-    this.indiceData = {
-      numComponents: 3, data: [],
-    };
-
-    this.texCoordData = {
-      numComponents: 2, data: [0,1],
-    }
-
-
-    this.normalData = {
-      numComponents: 2, data: [0,1],
-    }
-
     let cubeCount = 0;
 
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
         let currentTile = this.map[i][j];
-
         let ii = i * 2;
         let jj = j * 2;
-
         if(currentTile === 1) {
-          this.positionData.data = this.positionData.data.concat(this.cubeVerts(ii, jj));
-          this.indiceData.data = this.indiceData.data.concat(this.cubeIndices(cubeCount));
+          // By default we will render the top and bottom because we do not support multi-storey levels yet.
+          let faceMask = 0;
 
-          cubeCount += 24;
+          for(let k = 0; k < 9; k++) {
+            // Skip over if we're on the centre or one of the corners
+            if(k === 0 || k === 2 || k === 6 || k === 8 || k === 4) continue;
+
+            let ki = (k % 3) - 1;
+            let kj = Math.floor(k / 3) - 1;
+            let kii = ki + i;
+            let kjj = kj + j;
+
+            let lookup = (this.map[kii]) ? this.map[kii][kjj] : 0;
+
+            if(lookup !== 1) {
+              switch(k) {
+                case 1:
+                  // Front
+                  faceMask |= BACK;
+                  break;
+                case 3:
+                  // Left
+                  faceMask |= RIGHT;
+                  break;
+                case 5:
+                  // Right
+                  faceMask |= LEFT;
+                  break;
+                case 7:
+                  // Back
+                  faceMask |= FRONT;
+                  break;
+              }
+            }
+          }
+
+          let tileData = this.tileRenderData(ii, jj, cubeCount, faceMask);
+
+          this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
+          this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
+          this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+
+          cubeCount += tileData.faceCount;
+        } else {
+          let tileData = this.tileRenderData(ii, jj, cubeCount, TOP | BOTTOM);
+
+          this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
+          this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
+          this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+
+          cubeCount += tileData.faceCount;
         }
       }
     }
   }
 
-  cubeVerts(i, j) {
-    return [
-      -1.0+i, -1.0, 1.0+j,
-      1.0+i, -1.0, 1.0+j,
-      1.0+i, 1.0, 1.0+j,
-      -1.0+i, 1.0, 1.0+j,
-      1.0+i, -1.0, 1.0+j,
-      1.0+i, -1.0, -1.0+j,
-      1.0+i, 1.0, -1.0+j,
-      1.0+i, 1.0, 1.0+j,
-      1.0+i, -1.0, -1.0+j,
-      -1.0+i, -1.0, -1.0+j,
-      -1.0+i, 1.0, -1.0+j,
-      1.0+i, 1.0, -1.0+j,
-      -1.0+i, -1.0, -1.0+j,
-      -1.0+i, -1.0, 1.0+j,
-      -1.0+i, 1.0, 1.0+j,
-      -1.0+i, 1.0, -1.0+j,
-      -1.0+i, 1.0, 1.0+j,
-      1.0+i, 1.0, 1.0+j,
-      1.0+i, 1.0, -1.0+j,
-      -1.0+i, 1.0, -1.0+j,
-      1.0+i, -1.0, 1.0+j,
-      -1.0+i, -1.0, 1.0+j,
-      -1.0+i, -1.0, -1.0+j,
-      1.0+i, -1.0, -1.0+j,
-    ];
+  tileRenderData(xOffset, yOffset, indexBaseCount, discard = 63) {
+    let finalVertices = [];
+    let finalIndices = [];
+    let finalTexCoords = [];
+
+    let sides = {
+      top: !!(discard & TOP),
+      bottom: !!(discard & BOTTOM),
+      right: !!(discard & RIGHT),
+      left: !!(discard & LEFT),
+      front: !!(discard & FRONT),
+      back: !!(discard & BACK),
+    };
+
+    let indexCounter = 0;
+
+    for (let side in sides) {
+      let cur_side = sides[side];
+      if(!cur_side) continue;
+
+      let sideData = Level.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
+      finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
+      finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
+      finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
+
+      indexCounter += 4;
+    }
+
+    return {
+      vertices: finalVertices,
+      indices: finalIndices,
+      texcoords: finalTexCoords,
+      faceCount: indexCounter,
+    };
   }
 
-  cubeIndices(count) {
-    return [
-      // Font face
-      0+count, 1+count, 2+count, 2+count, 3+count, 0+count,
-      // Right face
-      7+count, 6+count, 5+count, 5+count, 4+count, 7+count,
-      // Back face
-      11+count, 10+count, 9+count, 9+count, 8+count, 11+count,
-      // Left face
-      15+count, 14+count, 13+count, 13+count, 12+count, 15+count,
-      // Top Face
-      19+count, 18+count, 17+count, 17+count, 16+count, 19+count,
-      // Bottom Face
-      23+count, 22+count, 21+count, 21+count, 20+count, 23+count,
-    ];
+  static cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
+    let finalVertices = [];
+    let finalIndices = [];
+    let finalTexCoords = [];
+
+    let firstSideIndices = [0+indexBaseCount, 1+indexBaseCount, 2+indexBaseCount, 2+indexBaseCount, 3+indexBaseCount, 0+indexBaseCount];
+    let otherSideIndices = [indexCounter+3+indexBaseCount, indexCounter+2+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+indexBaseCount, indexCounter+3+indexBaseCount];
+
+    if(indexCounter === 0) {
+      finalIndices = firstSideIndices;
+    } else {
+      finalIndices = otherSideIndices;
+    }
+
+    switch(side) {
+      case 'left':
+        finalVertices = [
+          1.0+i, -1.0, 1.0+j,
+          1.0+i, -1.0, -1.0+j,
+          1.0+i, 1.0, -1.0+j,
+          1.0+i, 1.0, 1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'right':
+        finalVertices = [
+          -1.0+i, -1.0, -1.0+j,
+          -1.0+i, -1.0, 1.0+j,
+          -1.0+i, 1.0, 1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'bottom':
+        finalVertices = [
+          1.0+i, -1.0, 1.0+j,
+          -1.0+i, -1.0, 1.0+j,
+          -1.0+i, -1.0, -1.0+j,
+          1.0+i, -1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'top':
+        finalVertices = [
+          -1.0+i, 1.0, 1.0+j,
+          1.0+i, 1.0, 1.0+j,
+          1.0+i, 1.0, -1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'front':
+        finalVertices = [
+          -1.0+i, -1.0, 1.0+j,
+          1.0+i, -1.0, 1.0+j,
+          1.0+i, 1.0, 1.0+j,
+          -1.0+i, 1.0, 1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'back':
+        finalVertices = [
+          1.0+i, -1.0, -1.0+j,
+          -1.0+i, -1.0, -1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+          1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      default:
+        console.warn(`${side} is an invalid side!`);
+    }
+
+    return {
+      vertices: finalVertices,
+      indices: finalIndices,
+      texcoords: finalTexCoords,
+    };
   }
 
   constructMap() {
     for(let i = 0; i < this.width; i++) {
-      this.map[i] = [];
+      this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
-        if(Math.random() < 0.3) {
+        if(Math.random() < 0.1) {
           this.map[i][j] = 1;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
           this.map[i][j] = 1;
@@ -9026,25 +9173,32 @@ class Shader {
 let generic = new Shader(
 `
     attribute vec3 a_position;
+    attribute vec2 a_texcoord;
     
     uniform mat4 u_projection;
  		uniform mat4 u_view;
     uniform mat4 u_model;
     
+    varying vec2 v_texCoord;
     varying vec3 position;
     
     void main() {
+      v_texCoord = a_texcoord;
       gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);
       position = a_position;
+      
     }
 `,
 `
     precision mediump float;
     varying vec3 position;
+    varying vec2 v_texCoord;
+    
+    uniform sampler2D u_texture;
     
     void main() {
-      
-      gl_FragColor = vec4(position, 1.0);
+      vec4 diffuseColor = texture2D(u_texture, v_texCoord);
+      gl_FragColor = diffuseColor;
     }
 `);
 
@@ -9096,15 +9250,16 @@ class Game {
 
     this.sceneSettings = {
       projection: {
-        fov: 30 * Math.PI / 180,
+        fov: 100 * Math.PI / 180,
         aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
       },
       camera: {
-        position: [0, 0, -60],
-        target: [0, 0, 0],
-        up: [0, 1, 0]
+        position: [8, 0, 8],
+        target: [0, 0, 100],
+        up: [0, 1, 0],
+        front: [0, 0, 0],
       }
     };
 
@@ -9118,6 +9273,10 @@ class Game {
         this.sceneSettings.camera.up
     );
 
+    // Scene
+    this.level = new __WEBPACK_IMPORTED_MODULE_2__level__["a" /* default */](this.gl);
+    this.bufferInfo = this.level.constructBuffers(this.gl);
+
     // Shaders
     __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].setup(this.gl, this.sharedUniforms);
 
@@ -9125,20 +9284,9 @@ class Game {
     this.sharedUniforms = {
       u_projection: this.projection,
       u_view: this.camera.view,
-      u_model: mat4.identity()
+      u_model: mat4.identity(),
+      u_texture: this.level.textures.wall2
     };
-
-
-    // var arrays = {
-    //   position: [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1],
-    //   normal:   [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1],
-    //   texcoord: [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-    //   indices:  [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23],
-    // };
-    // this.bufferInfo = twgl.createBufferInfoFromArrays(this.gl, arrays);
-
-    this.level = new __WEBPACK_IMPORTED_MODULE_2__level__["a" /* default */](this.gl);
-    this.bufferInfo = this.level.constructBuffers(this.gl);
 
   }
 
@@ -9150,7 +9298,7 @@ class Game {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     gl.enable(gl.DEPTH_TEST);
-    // gl.enable(gl.CULL_FACE);
+
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -9162,7 +9310,6 @@ class Game {
     this.sharedUniforms.u_view = view;
 
     this.sharedUniforms.u_model = mat4.identity();
-    this.sharedUniforms.u_model = mat4.multiply(mat4.rotateX(this.sharedUniforms.u_model, this.time * 0.01), mat4.translation(vec3.create(Math.sin(this.time/100),0,0)));
 
     gl.useProgram(__WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].program);
 
@@ -9197,9 +9344,27 @@ class Game {
   }
 
   handleMouseMove(e) {
+    let front = this.sceneSettings.camera.front;
 
-    this.sceneSettings.camera.target[0] -= e.movementX * 0.01;
-    this.sceneSettings.camera.target[1] -= e.movementY * 0.01;
+    front[0] -= e.movementX * 0.01;
+    front[1] -= e.movementY * 0.01;
+
+    if(front[0] < -Math.PI)
+      front[0] += Math.PI * 2;
+    else if(front[0] > Math.PI)
+      front[0] -= Math.PI * 2;
+
+    if(front[1] < (-Math.PI / 2) + 0.1)
+      front[1] = (-Math.PI / 2) + 0.1;
+    if(front[1] > (Math.PI / 2) - 0.1)
+      front[1] = (Math.PI / 2) - 0.1;
+
+    let newLookAt = vec3.create();
+    newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
+    newLookAt[1] = Math.sin(front[1]);
+    newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
+
+    vec3.add(this.sceneSettings.camera.position, newLookAt, this.sceneSettings.camera.target);
 
     this.camera.cameraInfo = this.camera;
   }
@@ -9250,10 +9415,21 @@ gameInstance.render();
 
 class Renderable {
   constructor() {
-    this.positionData = [];
-    this.texCoordData = [];
-    this.normalData = [];
-    this.indiceData = [];
+    this.positionData = {
+      numComponents: 3, data: [],
+    };
+
+    this.indiceData = {
+      numComponents: 3, data: [],
+    };
+
+    this.texCoordData = {
+      numComponents: 2, data: [],
+    };
+
+    this.normalData = {
+      numComponents: 2, data: [],
+    };
   }
 
   constructBuffers(gl) {

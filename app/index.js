@@ -35,7 +35,7 @@ class Game {
 
     this.sceneSettings = {
       projection: {
-        fov: 65 * Math.PI / 180,
+        fov: 100 * Math.PI / 180,
         aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
@@ -70,17 +70,9 @@ class Game {
       u_projection: this.projection,
       u_view: this.camera.view,
       u_model: mat4.identity(),
-      u_texture: this.level.textures.wall
+      u_texture: this.level.textures.wall2
     };
 
-
-    // var arrays = {
-    //   position: [1, 1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, 1, 1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, 1, 1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1, -1, 1, -1, 1, 1, -1, 1, -1, -1, -1, -1, -1],
-    //   normal:   [1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, -1, 0, 0, -1, 0, 0, -1, 0, 0, -1],
-    //   texcoord: [1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
-    //   indices:  [0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12, 14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23],
-    // };
-    // this.bufferInfo = twgl.createBufferInfoFromArrays(this.gl, arrays);
   }
 
   render() {
@@ -147,16 +139,15 @@ class Game {
     else if(front[0] > Math.PI)
       front[0] -= Math.PI * 2;
 
-    if(front[1] < -Math.PI / 2)
-      front[1] = -Math.PI / 2;
-    if(front[1] > Math.PI / 2)
-      front[1] = Math.PI / 2;
+    if(front[1] < (-Math.PI / 2) + 0.1)
+      front[1] = (-Math.PI / 2) + 0.1;
+    if(front[1] > (Math.PI / 2) - 0.1)
+      front[1] = (Math.PI / 2) - 0.1;
 
     let newLookAt = vec3.create();
     newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
     newLookAt[1] = Math.sin(front[1]);
     newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
-
 
     vec3.add(this.sceneSettings.camera.position, newLookAt, this.sceneSettings.camera.target);
 

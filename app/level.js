@@ -10,7 +10,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 100, height = 100) {
+  constructor(gl, width = 10, height = 10) {
     super(gl);
 
     this.width = width;
@@ -114,7 +114,7 @@ export default class Level extends Renderable {
       let cur_side = sides[side];
       if(!cur_side) continue;
 
-      let sideData = this.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
+      let sideData = Level.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
       finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
       finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
       finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
@@ -130,7 +130,7 @@ export default class Level extends Renderable {
     };
   }
 
-  cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
+  static cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
