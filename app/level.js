@@ -10,7 +10,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 10, height = 10) {
+  constructor(gl, width = 100, height = 100) {
     super(gl);
 
     this.width = width;
@@ -38,11 +38,8 @@ export default class Level extends Renderable {
         let ii = i * 2;
         let jj = j * 2;
         if(currentTile === 1) {
-
-
-          let faceCount = 4;
           // By default we will render the top and bottom because we do not support multi-storey levels yet.
-          let faceMask = TOP;
+          let faceMask = 0;
 
           for(let k = 0; k < 9; k++) {
             // Skip over if we're on the centre or one of the corners
@@ -74,212 +71,180 @@ export default class Level extends Renderable {
                   faceMask |= FRONT;
                   break;
               }
-              faceCount += 4;
             }
           }
 
-          this.positionData.data = this.positionData.data.concat(this.cubeVerts(ii, jj, faceMask));
-          this.indiceData.data = this.indiceData.data.concat(this.cubeIndices(cubeCount, faceMask));
+          let tileData = this.tileRenderData(ii, jj, cubeCount, faceMask);
 
-          this.texCoordData.data = this.texCoordData.data.concat(this.cubeTexCoords(faceMask));
+          this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
+          this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
+          this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
 
-          cubeCount += faceCount;
+          cubeCount += tileData.faceCount;
         } else {
-          let faceMask = TOP | BOTTOM;
+          let tileData = this.tileRenderData(ii, jj, cubeCount, TOP | BOTTOM);
 
-          this.positionData.data = this.positionData.data.concat(this.cubeVerts(ii, jj, faceMask));
-          this.indiceData.data = this.indiceData.data.concat(this.cubeIndices(cubeCount, faceMask));
-          this.texCoordData.data = this.texCoordData.data.concat(this.cubeTexCoords(faceMask));
+          this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
+          this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
+          this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
 
-          cubeCount += 8;
+          cubeCount += tileData.faceCount;
         }
       }
     }
   }
 
-  cubeVerts(i, j, discard = 63) {
-    let final = [];
+  tileRenderData(xOffset, yOffset, indexBaseCount, discard = 63) {
+    let finalVertices = [];
+    let finalIndices = [];
+    let finalTexCoords = [];
 
-    if(discard & TOP) {
-      final = final.concat([
-        -1.0+i, 1.0, 1.0+j,
-        1.0+i, 1.0, 1.0+j,
-        1.0+i, 1.0, -1.0+j,
-        -1.0+i, 1.0, -1.0+j,
-      ]);
+    let sides = {
+      top: !!(discard & TOP),
+      bottom: !!(discard & BOTTOM),
+      right: !!(discard & RIGHT),
+      left: !!(discard & LEFT),
+      front: !!(discard & FRONT),
+      back: !!(discard & BACK),
+    };
+
+    let indexCounter = 0;
+
+    for (let side in sides) {
+      let cur_side = sides[side];
+      if(!cur_side) continue;
+
+      let sideData = this.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
+      finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
+      finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
+      finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
+
+      indexCounter += 4;
     }
 
-    if(discard & BOTTOM) {
-      final = final.concat([
-        1.0+i, -1.0, 1.0+j,
-        -1.0+i, -1.0, 1.0+j,
-        -1.0+i, -1.0, -1.0+j,
-        1.0+i, -1.0, -1.0+j,
-      ]);
-    }
-
-    if(discard & RIGHT) {
-      final = final.concat([
-        -1.0+i, -1.0, -1.0+j,
-        -1.0+i, -1.0, 1.0+j,
-        -1.0+i, 1.0, 1.0+j,
-        -1.0+i, 1.0, -1.0+j,
-      ]);
-    }
-
-    if(discard & LEFT) {
-      final = final.concat([
-        1.0+i, -1.0, 1.0+j,
-        1.0+i, -1.0, -1.0+j,
-        1.0+i, 1.0, -1.0+j,
-        1.0+i, 1.0, 1.0+j,
-      ])
-    }
-
-    if(discard & FRONT) {
-      final = final.concat([
-        -1.0+i, -1.0, 1.0+j,
-        1.0+i, -1.0, 1.0+j,
-        1.0+i, 1.0, 1.0+j,
-        -1.0+i, 1.0, 1.0+j,
-      ])
-    }
-
-    if(discard & BACK) {
-      final = final.concat([
-        1.0+i, -1.0, -1.0+j,
-        -1.0+i, -1.0, -1.0+j,
-        -1.0+i, 1.0, -1.0+j,
-        1.0+i, 1.0, -1.0+j,
-      ])
-    }
-
-    return final;
+    return {
+      vertices: finalVertices,
+      indices: finalIndices,
+      texcoords: finalTexCoords,
+      faceCount: indexCounter,
+    };
   }
 
-  cubeTexCoords(discard = 63) {
-    let final = [];
+  cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
+    let finalVertices = [];
+    let finalIndices = [];
+    let finalTexCoords = [];
 
-    if(discard & TOP) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ]);
+    let firstSideIndices = [0+indexBaseCount, 1+indexBaseCount, 2+indexBaseCount, 2+indexBaseCount, 3+indexBaseCount, 0+indexBaseCount];
+    let otherSideIndices = [indexCounter+3+indexBaseCount, indexCounter+2+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+indexBaseCount, indexCounter+3+indexBaseCount];
+
+    if(indexCounter === 0) {
+      finalIndices = firstSideIndices;
+    } else {
+      finalIndices = otherSideIndices;
     }
 
-    if(discard & BOTTOM) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ]);
+    switch(side) {
+      case 'left':
+        finalVertices = [
+          1.0+i, -1.0, 1.0+j,
+          1.0+i, -1.0, -1.0+j,
+          1.0+i, 1.0, -1.0+j,
+          1.0+i, 1.0, 1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'right':
+        finalVertices = [
+          -1.0+i, -1.0, -1.0+j,
+          -1.0+i, -1.0, 1.0+j,
+          -1.0+i, 1.0, 1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'bottom':
+        finalVertices = [
+          1.0+i, -1.0, 1.0+j,
+          -1.0+i, -1.0, 1.0+j,
+          -1.0+i, -1.0, -1.0+j,
+          1.0+i, -1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'top':
+        finalVertices = [
+          -1.0+i, 1.0, 1.0+j,
+          1.0+i, 1.0, 1.0+j,
+          1.0+i, 1.0, -1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'front':
+        finalVertices = [
+          -1.0+i, -1.0, 1.0+j,
+          1.0+i, -1.0, 1.0+j,
+          1.0+i, 1.0, 1.0+j,
+          -1.0+i, 1.0, 1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      case 'back':
+        finalVertices = [
+          1.0+i, -1.0, -1.0+j,
+          -1.0+i, -1.0, -1.0+j,
+          -1.0+i, 1.0, -1.0+j,
+          1.0+i, 1.0, -1.0+j,
+        ];
+        finalTexCoords = [
+          0, 1,
+          1, 1,
+          1, 0,
+          0, 0,
+        ];
+        break;
+      default:
+        console.warn(`${side} is an invalid side!`);
     }
 
-    if(discard & RIGHT) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ]);
-    }
-
-    if(discard & LEFT) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ])
-    }
-
-    if(discard & FRONT) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ])
-    }
-
-    if(discard & BACK) {
-      final = final.concat([
-        0, 1,
-        1, 1,
-        1, 0,
-        0, 0,
-      ])
-    }
-
-    return final;
-  }
-
-  cubeIndices(count, discard = 63) {
-    let final = [];
-    let counter = 0;
-
-    if(discard & TOP) {
-      final = final.concat([
-        // Front face
-        0+count, 1+count, 2+count, 2+count, 3+count, 0+count,
-      ]);
-    }
-
-    if(discard & BOTTOM) {
-      counter += 4;
-      final = final.concat([
-        // Right face
-        counter+3+count, counter+2+count, counter+1+count, counter+1+count, counter+count, counter+3+count,
-      ]);
-
-    }
-
-    if(discard & RIGHT) {
-      counter += 4;
-      final = final.concat([
-        // Back face
-        counter+3+count, counter+2+count, counter+1+count, counter+1+count, counter+count, counter+3+count,
-      ]);
-
-    }
-
-    if(discard & LEFT) {
-      counter += 4;
-      final = final.concat([
-        // Left face
-        counter+3+count, counter+2+count, counter+1+count, counter+1+count, counter+count, counter+3+count,
-      ])
-
-    }
-
-    if(discard & FRONT) {
-      counter += 4;
-      final = final.concat([
-        // Top Face
-        counter+3+count, counter+2+count, counter+1+count, counter+1+count, counter+count, counter+3+count,
-      ])
-
-    }
-
-    if(discard & BACK) {
-      counter += 4;
-      final = final.concat([
-        // Bottom Face
-        counter+3+count, counter+2+count, counter+1+count, counter+1+count, counter+count, counter+3+count,
-      ])
-    }
-
-    return final;
+    return {
+      vertices: finalVertices,
+      indices: finalIndices,
+      texcoords: finalTexCoords,
+    };
   }
 
   constructMap() {
     for(let i = 0; i < this.width; i++) {
-      this.map[i] = [];
+      this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
-        if(Math.random() < 0.3) {
+        if(Math.random() < 0.1) {
           this.map[i][j] = 1;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
           this.map[i][j] = 1;
