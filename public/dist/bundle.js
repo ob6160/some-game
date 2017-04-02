@@ -8894,6 +8894,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
       wall: { src: "wall.jpg", mag: gl.NEAREST },
       wall2: { src: "wall2.jpg", mag: gl.NEAREST },
       wall3: { src: "wall3.jpg", mag: gl.NEAREST },
+      wall4: { src: "wall4.jpg", mag: gl.NEAREST },
     });
   }
 
@@ -8947,6 +8948,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
           this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+          this.normalData.data = [].concat.apply([], [this.normalData.data, tileData.normals]);
 
           cubeCount += tileData.faceCount;
         } else {
@@ -8955,6 +8957,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
           this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+          this.normalData.data = [].concat.apply([], [this.normalData.data, tileData.normals]);
 
           cubeCount += tileData.faceCount;
         }
@@ -8966,6 +8969,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
+    let finalNormals = [];
 
     let sides = {
       top: !!(discard & TOP),
@@ -8986,6 +8990,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
       finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
       finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
       finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
+      finalNormals = [].concat.apply([], [finalNormals, sideData.normals]);
 
       indexCounter += 4;
     }
@@ -8994,6 +8999,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
       vertices: finalVertices,
       indices: finalIndices,
       texcoords: finalTexCoords,
+      normals: finalNormals,
       faceCount: indexCounter,
     };
   }
@@ -9002,6 +9008,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
+    let finalNormals = [];
 
     let firstSideIndices = [0+indexBaseCount, 1+indexBaseCount, 2+indexBaseCount, 2+indexBaseCount, 3+indexBaseCount, 0+indexBaseCount];
     let otherSideIndices = [indexCounter+3+indexBaseCount, indexCounter+2+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+indexBaseCount, indexCounter+3+indexBaseCount];
@@ -9026,6 +9033,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          1,0,0,
+          1,0,0,
+          1,0,0,
+          1,0,0,
+        ];
         break;
       case 'right':
         finalVertices = [
@@ -9039,6 +9052,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 1,
           1, 0,
           0, 0,
+        ];
+        finalNormals = [
+            -1,0,0,
+            -1,0,0,
+            -1,0,0,
+            -1,0,0,
         ];
         break;
       case 'bottom':
@@ -9054,6 +9073,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,-1,0,
+          0,-1,0,
+          0,-1,0,
+          0,-1,0,
+        ];
         break;
       case 'top':
         finalVertices = [
@@ -9067,6 +9092,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 1,
           1, 0,
           0, 0,
+        ];
+        finalNormals = [
+          0,1,0,
+          0,1,0,
+          0,1,0,
+          0,1,0,
         ];
         break;
       case 'front':
@@ -9082,6 +9113,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,0,1,
+          0,0,1,
+          0,0,1,
+          0,0,1,
+        ];
         break;
       case 'back':
         finalVertices = [
@@ -9096,6 +9133,12 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,0,-1,
+          0,0,-1,
+          0,0,-1,
+          0,0,-1,
+        ];
         break;
       default:
         console.warn(`${side} is an invalid side!`);
@@ -9104,6 +9147,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     return {
       vertices: finalVertices,
       indices: finalIndices,
+      normals: finalNormals,
       texcoords: finalTexCoords,
     };
   }
@@ -9174,31 +9218,58 @@ let generic = new Shader(
 `
     attribute vec3 a_position;
     attribute vec2 a_texcoord;
+    attribute vec3 a_normal;
     
     uniform mat4 u_projection;
  		uniform mat4 u_view;
     uniform mat4 u_model;
     
     varying vec2 v_texCoord;
-    varying vec3 position;
+    varying vec3 v_normal;
     
+    highp mat4 transpose(in highp mat4 inMatrix) {
+      highp vec4 i0 = inMatrix[0];
+      highp vec4 i1 = inMatrix[1];
+      highp vec4 i2 = inMatrix[2];
+      highp vec4 i3 = inMatrix[3];
+  
+      highp mat4 outMatrix = mat4(
+                   vec4(i0.x, i1.x, i2.x, i3.x),
+                   vec4(i0.y, i1.y, i2.y, i3.y),
+                   vec4(i0.z, i1.z, i2.z, i3.z),
+                   vec4(i0.w, i1.w, i2.w, i3.w)
+                   );
+  
+      return outMatrix;
+  }
     void main() {
       v_texCoord = a_texcoord;
+
       gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);
-      position = a_position;
       
+      // Pass the normal to the fragment shader
+      v_normal = mat3(transpose(u_projection)) * a_normal;
     }
+    
 `,
 `
     precision mediump float;
-    varying vec3 position;
     varying vec2 v_texCoord;
+    varying vec3 v_normal;
     
     uniform sampler2D u_texture;
     
     void main() {
+      vec3 tempLightDirection = vec3(0.9, 0.5, 0.5);
+      vec3 normal = normalize(v_normal);
+    
+      float lightIntensity = dot(normal, tempLightDirection);
+    
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
+      
       gl_FragColor = diffuseColor;
+      
+      gl_FragColor.rgb *= clamp(lightIntensity, 0.3, 0.8);
     }
 `);
 
@@ -9234,7 +9305,7 @@ class Game {
     };
 
     this.glContextSetup = {
-      preserveDrawingBuffer: true
+      preserveDrawingBuffer: false
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -9250,7 +9321,7 @@ class Game {
 
     this.sceneSettings = {
       projection: {
-        fov: 100 * Math.PI / 180,
+        fov: 45 * Math.PI / 180,
         aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
@@ -9346,8 +9417,8 @@ class Game {
   handleMouseMove(e) {
     let front = this.sceneSettings.camera.front;
 
-    front[0] -= e.movementX * 0.01;
-    front[1] -= e.movementY * 0.01;
+    front[0] -= e.movementX * 0.001;
+    front[1] -= e.movementY * 0.001;
 
     if(front[0] < -Math.PI)
       front[0] += Math.PI * 2;
@@ -9428,7 +9499,7 @@ class Renderable {
     };
 
     this.normalData = {
-      numComponents: 2, data: [],
+      numComponents: 3, data: [],
     };
   }
 

@@ -15,7 +15,7 @@ export default class Renderable {
     };
 
     this.normalData = {
-      numComponents: 2, data: [],
+      numComponents: 3, data: [],
     };
   }
 

@@ -19,7 +19,7 @@ class Game {
     };
 
     this.glContextSetup = {
-      preserveDrawingBuffer: true
+      preserveDrawingBuffer: false
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -35,7 +35,7 @@ class Game {
 
     this.sceneSettings = {
       projection: {
-        fov: 100 * Math.PI / 180,
+        fov: 45 * Math.PI / 180,
         aspectRatio: this.aspectRatio,
         near: 0.1,
         far: 1000
@@ -131,8 +131,8 @@ class Game {
   handleMouseMove(e) {
     let front = this.sceneSettings.camera.front;
 
-    front[0] -= e.movementX * 0.01;
-    front[1] -= e.movementY * 0.01;
+    front[0] -= e.movementX * 0.001;
+    front[1] -= e.movementY * 0.001;
 
     if(front[0] < -Math.PI)
       front[0] += Math.PI * 2;

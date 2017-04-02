@@ -26,6 +26,7 @@ export default class Level extends Renderable {
       wall: { src: "wall.jpg", mag: gl.NEAREST },
       wall2: { src: "wall2.jpg", mag: gl.NEAREST },
       wall3: { src: "wall3.jpg", mag: gl.NEAREST },
+      wall4: { src: "wall4.jpg", mag: gl.NEAREST },
     });
   }
 
@@ -79,6 +80,7 @@ export default class Level extends Renderable {
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
           this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+          this.normalData.data = [].concat.apply([], [this.normalData.data, tileData.normals]);
 
           cubeCount += tileData.faceCount;
         } else {
@@ -87,6 +89,7 @@ export default class Level extends Renderable {
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
           this.texCoordData.data = [].concat.apply([], [this.texCoordData.data, tileData.texcoords]);
+          this.normalData.data = [].concat.apply([], [this.normalData.data, tileData.normals]);
 
           cubeCount += tileData.faceCount;
         }
@@ -98,6 +101,7 @@ export default class Level extends Renderable {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
+    let finalNormals = [];
 
     let sides = {
       top: !!(discard & TOP),
@@ -118,6 +122,7 @@ export default class Level extends Renderable {
       finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
       finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
       finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
+      finalNormals = [].concat.apply([], [finalNormals, sideData.normals]);
 
       indexCounter += 4;
     }
@@ -126,6 +131,7 @@ export default class Level extends Renderable {
       vertices: finalVertices,
       indices: finalIndices,
       texcoords: finalTexCoords,
+      normals: finalNormals,
       faceCount: indexCounter,
     };
   }
@@ -134,6 +140,7 @@ export default class Level extends Renderable {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
+    let finalNormals = [];
 
     let firstSideIndices = [0+indexBaseCount, 1+indexBaseCount, 2+indexBaseCount, 2+indexBaseCount, 3+indexBaseCount, 0+indexBaseCount];
     let otherSideIndices = [indexCounter+3+indexBaseCount, indexCounter+2+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+1+indexBaseCount, indexCounter+indexBaseCount, indexCounter+3+indexBaseCount];
@@ -158,6 +165,12 @@ export default class Level extends Renderable {
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          1,0,0,
+          1,0,0,
+          1,0,0,
+          1,0,0,
+        ];
         break;
       case 'right':
         finalVertices = [
@@ -171,6 +184,12 @@ export default class Level extends Renderable {
           1, 1,
           1, 0,
           0, 0,
+        ];
+        finalNormals = [
+            -1,0,0,
+            -1,0,0,
+            -1,0,0,
+            -1,0,0,
         ];
         break;
       case 'bottom':
@@ -186,6 +205,12 @@ export default class Level extends Renderable {
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,-1,0,
+          0,-1,0,
+          0,-1,0,
+          0,-1,0,
+        ];
         break;
       case 'top':
         finalVertices = [
@@ -199,6 +224,12 @@ export default class Level extends Renderable {
           1, 1,
           1, 0,
           0, 0,
+        ];
+        finalNormals = [
+          0,1,0,
+          0,1,0,
+          0,1,0,
+          0,1,0,
         ];
         break;
       case 'front':
@@ -214,6 +245,12 @@ export default class Level extends Renderable {
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,0,1,
+          0,0,1,
+          0,0,1,
+          0,0,1,
+        ];
         break;
       case 'back':
         finalVertices = [
@@ -228,6 +265,12 @@ export default class Level extends Renderable {
           1, 0,
           0, 0,
         ];
+        finalNormals = [
+          0,0,-1,
+          0,0,-1,
+          0,0,-1,
+          0,0,-1,
+        ];
         break;
       default:
         console.warn(`${side} is an invalid side!`);
@@ -236,6 +279,7 @@ export default class Level extends Renderable {
     return {
       vertices: finalVertices,
       indices: finalIndices,
+      normals: finalNormals,
       texcoords: finalTexCoords,
     };
   }
