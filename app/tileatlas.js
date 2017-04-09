@@ -29,6 +29,8 @@ export default class TileAtlas extends Texture {
    * @param id
    */
   clipTile(id) {
+
+
     let x = (id * this.scaleX) % 1;
     let y = Math.floor(id * this.scaleY) / this.tileSize;
 
@@ -40,10 +42,10 @@ export default class TileAtlas extends Texture {
     let x = clipTile[0] + this.paddingX * this.scaleX * this.scaleY;
     let y = clipTile[1] + this.paddingY * this.scaleX * this.scaleY;
     return [
-      x, y + this.scaleY,
-      x + this.scaleX, y + this.scaleY,
-      x + this.scaleX, y,
-      x, y
+      x + 0.001, (y + this.scaleY) - 0.001,
+      (x + this.scaleX) - 0.001, (y + this.scaleY) - 0.001,
+      (x + this.scaleX) - 0.001, y + 0.001,
+      x + 0.001, y + 0.001
     ];
 
   }
