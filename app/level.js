@@ -11,7 +11,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 10, height = 10) {
+  constructor(gl, width = 50, height = 50) {
     super(gl);
 
     this.width = width;
@@ -20,9 +20,10 @@ export default class Level extends Renderable {
     this.map = [];
 
     this.atlas = new TileAtlas(gl, {
-      src: "mcset.png",
-      minMag: gl.NEAREST,
+      min: gl.NEAREST_MIPMAP_NEAREST,
+      mag: gl.NEAREST,
       wrap: gl.CLAMP_TO_EDGE,
+      src: "mcset.png",
     }, 16, 256, 256, 0, 0);
     this.uniforms['u_texture'] = this.atlas.texture;
 
@@ -32,10 +33,14 @@ export default class Level extends Renderable {
 
   generateVertices() {
     let cubeCount = 0;
-    let sideTextures = [16,16,85,6,6,16];
+    let sideTextures = [];
 
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
+        for(let l = 0; l < 6; l++) {
+          sideTextures[l] = Math.round(Math.random() * 80)
+        }
+
         let currentTile = this.map[i][j];
         let ii = i * 2;
         let jj = j * 2;
@@ -76,7 +81,7 @@ export default class Level extends Renderable {
             }
           }
 
-          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, faceMask | TOP | BOTTOM);
+          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, faceMask);
 
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);

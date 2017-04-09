@@ -8866,6 +8866,8 @@ class Camera {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__renderable__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__tileatlas__ = __webpack_require__(7);
+
 
 
 
@@ -8878,31 +8880,35 @@ const TOP = 1,
       FRONT = 32;
 
 class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */] {
-  constructor(gl, width = 10, height = 10) {
+  constructor(gl, width = 50, height = 50) {
     super(gl);
 
     this.width = width;
     this.height = height;
 
     this.map = [];
+
+    this.atlas = new __WEBPACK_IMPORTED_MODULE_2__tileatlas__["a" /* default */](gl, {
+      minMag: gl.NEAREST,
+      wrap: gl.CLAMP_TO_EDGE,
+      src: "Wolf3DWallSheet.png",
+    }, 64, 384, 1152, 0, 0);
+    this.uniforms['u_texture'] = this.atlas.texture;
+
     this.constructMap();
     this.generateVertices();
-
-    // TODO: Handle textures properly.
-    this.textures = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createTextures(gl, {
-      // a power of 2 image
-      wall: { src: "wall.jpg", mag: gl.NEAREST },
-      wall2: { src: "wall2.jpg", mag: gl.NEAREST },
-      wall3: { src: "wall3.jpg", mag: gl.NEAREST },
-      wall4: { src: "wall4.jpg", mag: gl.NEAREST },
-    });
   }
 
   generateVertices() {
     let cubeCount = 0;
+    let sideTextures = [];
 
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
+        for(let l = 0; l < 6; l++) {
+          sideTextures[l] = Math.round(Math.random() * 80)
+        }
+
         let currentTile = this.map[i][j];
         let ii = i * 2;
         let jj = j * 2;
@@ -8943,7 +8949,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
             }
           }
 
-          let tileData = this.tileRenderData(ii, jj, cubeCount, faceMask);
+          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, faceMask);
 
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
@@ -8952,7 +8958,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
 
           cubeCount += tileData.faceCount;
         } else {
-          let tileData = this.tileRenderData(ii, jj, cubeCount, TOP | BOTTOM);
+          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, TOP | BOTTOM);
 
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
@@ -8965,7 +8971,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     }
   }
 
-  tileRenderData(xOffset, yOffset, indexBaseCount, discard = 63) {
+  tileRenderData(xOffset, yOffset, indexBaseCount, sideTextures, discard = 63) {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
@@ -8981,12 +8987,17 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     };
 
     let indexCounter = 0;
+    let sideCounter = 0;
 
     for (let side in sides) {
       let cur_side = sides[side];
+      let curTexCode = sideTextures[sideCounter];
+
+      sideCounter++;
+
       if(!cur_side) continue;
 
-      let sideData = Level.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
+      let sideData = this.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter, curTexCode);
       finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
       finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
       finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
@@ -9004,7 +9015,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     };
   }
 
-  static cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
+  cubeSideData(side, i, j, indexBaseCount, indexCounter = 0, texCode = 0) {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
@@ -9027,12 +9038,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1.0+i, 1.0, -1.0+j,
           1.0+i, 1.0, 1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           1,0,0,
           1,0,0,
@@ -9046,12 +9051,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           -1.0+i, -1.0, 1.0+j,
           -1.0+i, 1.0, 1.0+j,
           -1.0+i, 1.0, -1.0+j,
-        ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
         ];
         finalNormals = [
             -1,0,0,
@@ -9067,12 +9066,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           -1.0+i, -1.0, -1.0+j,
           1.0+i, -1.0, -1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,-1,0,
           0,-1,0,
@@ -9086,12 +9079,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1.0+i, 1.0, 1.0+j,
           1.0+i, 1.0, -1.0+j,
           -1.0+i, 1.0, -1.0+j,
-        ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
         ];
         finalNormals = [
           0,1,0,
@@ -9107,12 +9094,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           1.0+i, 1.0, 1.0+j,
           -1.0+i, 1.0, 1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,0,1,
           0,0,1,
@@ -9127,12 +9108,6 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
           -1.0+i, 1.0, -1.0+j,
           1.0+i, 1.0, -1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,0,-1,
           0,0,-1,
@@ -9143,6 +9118,8 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
       default:
         console.warn(`${side} is an invalid side!`);
     }
+
+    finalTexCoords = this.atlas.clipTexCoords(texCode);
 
     return {
       vertices: finalVertices,
@@ -9177,7 +9154,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return generic; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return levelShader; });
 
 
 class Shader {
@@ -9214,7 +9191,7 @@ class Shader {
 // Shader Instances
 
 // Generic
-let generic = new Shader(
+let levelShader = new Shader(
 `
     attribute vec3 a_position;
     attribute vec2 a_texcoord;
@@ -9266,6 +9243,8 @@ let generic = new Shader(
       float lightIntensity = dot(normal, tempLightDirection);
     
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
+      
+      // if(diffuseColor.a < 0.5) discard;
       
       gl_FragColor = diffuseColor;
       
@@ -9349,14 +9328,13 @@ class Game {
     this.bufferInfo = this.level.constructBuffers(this.gl);
 
     // Shaders
-    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].setup(this.gl, this.sharedUniforms);
+    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* levelShader */].setup(this.gl, this.sharedUniforms);
 
     // Shared Shader Uniforms Init
     this.sharedUniforms = {
       u_projection: this.projection,
       u_view: this.camera.view,
-      u_model: mat4.identity(),
-      u_texture: this.level.textures.wall2
+      u_model: mat4.identity()
     };
 
   }
@@ -9379,16 +9357,9 @@ class Game {
 
     this.sharedUniforms.u_projection = projection;
     this.sharedUniforms.u_view = view;
-
     this.sharedUniforms.u_model = mat4.identity();
 
-    gl.useProgram(__WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].program);
-
-    __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.setBuffersAndAttributes(gl, __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].programInfo, this.bufferInfo);
-    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* generic */].uniforms = this.sharedUniforms;
-
-    gl.drawElements(gl.TRIANGLES, this.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
-
+    this.level.render(gl, __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* levelShader */], this.sharedUniforms);
 
     requestAnimationFrame(this.render.bind(this));
   }
@@ -9485,7 +9456,9 @@ gameInstance.render();
 
 
 class Renderable {
-  constructor() {
+  constructor(uniforms) {
+    this.uniforms = uniforms || {};
+
     this.positionData = {
       numComponents: 3, data: [],
     };
@@ -9508,6 +9481,18 @@ class Renderable {
     return this.bufferInfo;
   }
 
+  render(gl, shader, uniforms) {
+    let mergedUniforms = Object.assign({}, uniforms, this.uniforms);
+
+    gl.useProgram(shader.program);
+
+    __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.setBuffersAndAttributes(gl, shader.programInfo, this.bufferInfo);
+    shader.uniforms = mergedUniforms;
+
+    gl.drawElements(gl.TRIANGLES, this.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+
+  }
+
   set bufferData({position = [], texcoord = [], normal = [], indices = []}) {
     this.positionData = position;
     this.texCoordData = texcoord;
@@ -9527,6 +9512,88 @@ class Renderable {
   }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Renderable;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
+
+
+class Texture {
+  constructor(gl, options) {
+    this.options = options;
+
+    this.texture = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createTexture(gl, this.options);
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Texture;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__texture__ = __webpack_require__(6);
+
+
+
+
+class TileAtlas extends __WEBPACK_IMPORTED_MODULE_1__texture__["a" /* default */] {
+  constructor(gl, texOptions, tileSize = 16, width = 256, height = 256, paddingX = 0, paddingY = 0) {
+    super(gl, texOptions);
+
+    this.tileSize = tileSize;
+
+    this.width = width;
+    this.height = height;
+    this.paddingX = paddingX;
+    this.paddingY = paddingY;
+
+  }
+
+  get scaleX() {
+    return this.tileSize / this.width;
+  }
+
+  get scaleY() {
+    return this.tileSize / this.height;
+  }
+
+  /**
+   * Returns the clipped proportion for the specified tile id.
+   *
+   * @param id
+   */
+  clipTile(id) {
+    let smallest = (this.scaleX < this.scaleY) ? this.scaleY : this.scaleX;
+
+    let x = (id * this.scaleX) % 1;
+    let y = Math.floor(id * smallest) * this.scaleY;
+
+    return [x, y];
+  }
+
+  clipTexCoords(tileID) {
+    let clipTile = this.clipTile(tileID);
+    let x = clipTile[0] + (this.paddingX * this.scaleX * this.scaleY);
+    let y = clipTile[1] + (this.paddingY * this.scaleX * this.scaleY);
+    return [
+      x + 0.001, (y + this.scaleY) - 0.001,
+      (x + this.scaleX - 0.001), (y + this.scaleY) - 0.001,
+      x + this.scaleX, y + 0.001,
+      x + 0.001, y + 0.001
+    ];
+
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = TileAtlas;
 
 
 /***/ })
