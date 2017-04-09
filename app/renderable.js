@@ -1,7 +1,9 @@
 import twgl from 'twgl.js/dist/3.x/twgl-full';
 
 export default class Renderable {
-  constructor() {
+  constructor(uniforms) {
+    this.uniforms = uniforms || {};
+
     this.positionData = {
       numComponents: 3, data: [],
     };
@@ -22,6 +24,18 @@ export default class Renderable {
   constructBuffers(gl) {
     this.bufferInfo = twgl.createBufferInfoFromArrays(gl, this.bufferDefinitions);
     return this.bufferInfo;
+  }
+
+  render(gl, shader, uniforms) {
+    let mergedUniforms = Object.assign({}, uniforms, this.uniforms);
+
+    gl.useProgram(shader.program);
+
+    twgl.setBuffersAndAttributes(gl, shader.programInfo, this.bufferInfo);
+    shader.uniforms = mergedUniforms;
+
+    gl.drawElements(gl.TRIANGLES, this.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
+
   }
 
   set bufferData({position = [], texcoord = [], normal = [], indices = []}) {

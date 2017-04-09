@@ -1,6 +1,7 @@
 import twgl from 'twgl.js/dist/3.x/twgl-full';
 
 import Renderable from './renderable';
+import TileAtlas from './tileatlas';
 
 const TOP = 1,
       BOTTOM = 2,
@@ -17,21 +18,21 @@ export default class Level extends Renderable {
     this.height = height;
 
     this.map = [];
+
+    this.atlas = new TileAtlas(gl, {
+      src: "mcset.png",
+      minMag: gl.NEAREST,
+      wrap: gl.CLAMP_TO_EDGE,
+    }, 16, 256, 256, 0, 0);
+    this.uniforms['u_texture'] = this.atlas.texture;
+
     this.constructMap();
     this.generateVertices();
-
-    // TODO: Handle textures properly.
-    this.textures = twgl.createTextures(gl, {
-      // a power of 2 image
-      wall: { src: "wall.jpg", mag: gl.NEAREST },
-      wall2: { src: "wall2.jpg", mag: gl.NEAREST },
-      wall3: { src: "wall3.jpg", mag: gl.NEAREST },
-      wall4: { src: "wall4.jpg", mag: gl.NEAREST },
-    });
   }
 
   generateVertices() {
     let cubeCount = 0;
+    let sideTextures = [16,16,85,6,6,16];
 
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
@@ -75,7 +76,7 @@ export default class Level extends Renderable {
             }
           }
 
-          let tileData = this.tileRenderData(ii, jj, cubeCount, faceMask);
+          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, faceMask | TOP | BOTTOM);
 
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
@@ -84,7 +85,7 @@ export default class Level extends Renderable {
 
           cubeCount += tileData.faceCount;
         } else {
-          let tileData = this.tileRenderData(ii, jj, cubeCount, TOP | BOTTOM);
+          let tileData = this.tileRenderData(ii, jj, cubeCount, sideTextures, TOP | BOTTOM);
 
           this.positionData.data = [].concat.apply([], [this.positionData.data, tileData.vertices]);
           this.indiceData.data = [].concat.apply([], [this.indiceData.data, tileData.indices]);
@@ -97,7 +98,7 @@ export default class Level extends Renderable {
     }
   }
 
-  tileRenderData(xOffset, yOffset, indexBaseCount, discard = 63) {
+  tileRenderData(xOffset, yOffset, indexBaseCount, sideTextures, discard = 63) {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
@@ -113,12 +114,17 @@ export default class Level extends Renderable {
     };
 
     let indexCounter = 0;
+    let sideCounter = 0;
 
     for (let side in sides) {
       let cur_side = sides[side];
+      let curTexCode = sideTextures[sideCounter];
+
+      sideCounter++;
+
       if(!cur_side) continue;
 
-      let sideData = Level.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter);
+      let sideData = this.cubeSideData(side, xOffset, yOffset, indexBaseCount, indexCounter, curTexCode);
       finalVertices = [].concat.apply([], [finalVertices, sideData.vertices]);
       finalIndices = [].concat.apply([], [finalIndices, sideData.indices]);
       finalTexCoords = [].concat.apply([], [finalTexCoords, sideData.texcoords]);
@@ -136,7 +142,7 @@ export default class Level extends Renderable {
     };
   }
 
-  static cubeSideData(side, i, j, indexBaseCount, indexCounter = 0) {
+  cubeSideData(side, i, j, indexBaseCount, indexCounter = 0, texCode = 0) {
     let finalVertices = [];
     let finalIndices = [];
     let finalTexCoords = [];
@@ -159,12 +165,6 @@ export default class Level extends Renderable {
           1.0+i, 1.0, -1.0+j,
           1.0+i, 1.0, 1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           1,0,0,
           1,0,0,
@@ -178,12 +178,6 @@ export default class Level extends Renderable {
           -1.0+i, -1.0, 1.0+j,
           -1.0+i, 1.0, 1.0+j,
           -1.0+i, 1.0, -1.0+j,
-        ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
         ];
         finalNormals = [
             -1,0,0,
@@ -199,12 +193,6 @@ export default class Level extends Renderable {
           -1.0+i, -1.0, -1.0+j,
           1.0+i, -1.0, -1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,-1,0,
           0,-1,0,
@@ -218,12 +206,6 @@ export default class Level extends Renderable {
           1.0+i, 1.0, 1.0+j,
           1.0+i, 1.0, -1.0+j,
           -1.0+i, 1.0, -1.0+j,
-        ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
         ];
         finalNormals = [
           0,1,0,
@@ -239,12 +221,6 @@ export default class Level extends Renderable {
           1.0+i, 1.0, 1.0+j,
           -1.0+i, 1.0, 1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,0,1,
           0,0,1,
@@ -259,12 +235,6 @@ export default class Level extends Renderable {
           -1.0+i, 1.0, -1.0+j,
           1.0+i, 1.0, -1.0+j,
         ];
-        finalTexCoords = [
-          0, 1,
-          1, 1,
-          1, 0,
-          0, 0,
-        ];
         finalNormals = [
           0,0,-1,
           0,0,-1,
@@ -275,6 +245,8 @@ export default class Level extends Renderable {
       default:
         console.warn(`${side} is an invalid side!`);
     }
+
+    finalTexCoords = this.atlas.clipTexCoords(texCode);
 
     return {
       vertices: finalVertices,

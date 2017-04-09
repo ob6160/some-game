@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "serve": "serve --single --port 8080 public",
-    "dev-serve": "webpack-dev-server --open",
+    "dev": "webpack-dev-server --open",
     "build": "webpack --progress",
     "watch": "webpack --progress --watch"
   },

@@ -8,7 +8,7 @@ import Camera from './camera';
 import Level from './level';
 
 // Shader Imports
-import { generic } from './shaders'
+import { levelShader } from './shaders'
 
 class Game {
   constructor() {
@@ -63,14 +63,13 @@ class Game {
     this.bufferInfo = this.level.constructBuffers(this.gl);
 
     // Shaders
-    generic.setup(this.gl, this.sharedUniforms);
+    levelShader.setup(this.gl, this.sharedUniforms);
 
     // Shared Shader Uniforms Init
     this.sharedUniforms = {
       u_projection: this.projection,
       u_view: this.camera.view,
-      u_model: mat4.identity(),
-      u_texture: this.level.textures.wall2
+      u_model: mat4.identity()
     };
 
   }
@@ -93,16 +92,9 @@ class Game {
 
     this.sharedUniforms.u_projection = projection;
     this.sharedUniforms.u_view = view;
-
     this.sharedUniforms.u_model = mat4.identity();
 
-    gl.useProgram(generic.program);
-
-    twgl.setBuffersAndAttributes(gl, generic.programInfo, this.bufferInfo);
-    generic.uniforms = this.sharedUniforms;
-
-    gl.drawElements(gl.TRIANGLES, this.bufferInfo.numElements, gl.UNSIGNED_SHORT, 0);
-
+    this.level.render(gl, levelShader, this.sharedUniforms);
 
     requestAnimationFrame(this.render.bind(this));
   }

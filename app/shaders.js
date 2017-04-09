@@ -32,7 +32,7 @@ export default class Shader {
 // Shader Instances
 
 // Generic
-export let generic = new Shader(
+export let levelShader = new Shader(
 `
     attribute vec3 a_position;
     attribute vec2 a_texcoord;
@@ -84,6 +84,8 @@ export let generic = new Shader(
       float lightIntensity = dot(normal, tempLightDirection);
     
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
+      
+      if(diffuseColor.a < 0.5) discard;
       
       gl_FragColor = diffuseColor;
       
