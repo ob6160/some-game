@@ -16,6 +16,12 @@ module.exports = {
         query: {
           presets: ['es2015', 'stage-0']
         }
+      },
+    ],
+    rules: [
+      {
+        test: /\.glsl/,
+        use: 'raw-loader'
       }
     ]
   },

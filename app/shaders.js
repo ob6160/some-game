@@ -145,24 +145,28 @@ export let levelShader = new Shader(
       v_normal = mat3(transpose(u_projection)) * a_normal;
     }
     
-`,
-`
+`,` #extension GL_EXT_shader_texture_lod : enable
+    #extension GL_OES_standard_derivatives : enable
     precision highp float;
+    
     varying vec2 v_texCoord;
     varying vec3 v_normal;
-    
+
     uniform sampler2D u_texture;
-    
+  
     void main() {
       vec3 tempLightDirection = vec3(0.9, 0.5, 0.5);
       vec3 normal = normalize(v_normal);
     
       float lightIntensity = dot(normal, tempLightDirection);
     
-      vec4 diffuseColor = texture2D(u_texture, v_texCoord);
+
+      vec4 diffuseColor = texture2DLodEXT(u_texture, v_texCoord, -1.0);
       
+      // if(diffuseColor.a < 0.5) discard;
+
       gl_FragColor = diffuseColor;
       
-      gl_FragColor.rgb *= clamp(lightIntensity, 0.3, 0.8);
+      gl_FragColor.rgb *= clamp(lightIntensity, 0.3, 0.9);
     }
 `);

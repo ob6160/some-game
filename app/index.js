@@ -20,7 +20,7 @@ class Game {
 
     this.glContextSetup = {
       preserveDrawingBuffer: false,
-      antialiasing: true
+      premultipliedAlpha: false,
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -35,8 +35,15 @@ class Game {
     );
 
     window.game = {
-      fxaa: false,
+      fxaa: true,
     };
+
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+
+    this.gl.getExtension('OES_standard_derivatives');
+    this.gl.getExtension('EXT_shader_texture_lod');
+
 
     this.sceneSettings = {
       projection: {

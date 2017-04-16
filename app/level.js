@@ -20,7 +20,7 @@ export default class Level extends Renderable {
     this.map = [];
 
     this.atlas = new TileAtlas(gl, {
-      min: gl.NEAREST,
+      min: gl.LINEAR_MIPMAP_NEAREST,
       mag: gl.NEAREST,
       wrap: gl.CLAMP_TO_EDGE,
       src: "mcset.png",
