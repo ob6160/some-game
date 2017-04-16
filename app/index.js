@@ -8,7 +8,7 @@ import Camera from './camera';
 import Level from './level';
 
 // Shader Imports
-import { levelShader } from './shaders'
+import { postprocessShader, levelShader } from './shaders'
 
 class Game {
   constructor() {
@@ -19,7 +19,8 @@ class Game {
     };
 
     this.glContextSetup = {
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
+      antialiasing: true
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -32,6 +33,10 @@ class Game {
         document.getElementById(canvasID),
         this.glContextSetup
     );
+
+    window.game = {
+      fxaa: false,
+    };
 
     this.sceneSettings = {
       projection: {
@@ -58,18 +63,27 @@ class Game {
         this.sceneSettings.camera.up
     );
 
+    // Postprocessing
+    this.displayBuffer = twgl.primitives.createXYQuadBufferInfo(this.gl, 0, 0, 0);
+
+    this.fxaaFBOBuffer = twgl.createFramebufferInfo(this.gl, undefined, this.gl.canvas.clientWidth, this.gl.canvas.clientHeight);
+    twgl.bindFramebufferInfo(this.gl, null);
+
     // Scene
     this.level = new Level(this.gl);
-    this.bufferInfo = this.level.constructBuffers(this.gl);
+    this.levelBufferInfo = this.level.constructBuffers(this.gl);
 
     // Shaders
     levelShader.setup(this.gl, this.sharedUniforms);
+    postprocessShader.setup(this.gl, this.sharedUniforms);
 
     // Shared Shader Uniforms Init
     this.sharedUniforms = {
       u_projection: this.projection,
       u_view: this.camera.view,
-      u_model: mat4.identity()
+      u_model: mat4.identity(),
+      u_viewportSize: [this.gl.canvas.clientWidth, this.gl.canvas.clientHeight],
+      u_texture: this.fxaaFBOBuffer.attachments[0],
     };
 
   }
@@ -78,9 +92,14 @@ class Game {
     let gl = this.gl;
     this.time = this.time + 1 || 0;
 
+    if(window.game.fxaa) {
+      twgl.bindFramebufferInfo(gl, this.fxaaFBOBuffer);
+    }
+
     twgl.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+    gl.cullFace(gl.BACK);
     gl.enable(gl.DEPTH_TEST);
 
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -95,6 +114,19 @@ class Game {
     this.sharedUniforms.u_model = mat4.identity();
 
     this.level.render(gl, levelShader, this.sharedUniforms);
+
+    if(window.game.fxaa) {
+      twgl.bindFramebufferInfo(gl, null);
+      gl.clearColor(0, 0.0, 0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(postprocessShader.program);
+
+      twgl.setBuffersAndAttributes(gl, postprocessShader.programInfo, this.displayBuffer);
+      this.sharedUniforms['u_texture'] = this.fxaaFBOBuffer.attachments[0];
+      postprocessShader.uniforms = this.sharedUniforms;
+
+      twgl.drawBufferInfo(gl, this.displayBuffer);
+    }
 
     requestAnimationFrame(this.render.bind(this));
   }

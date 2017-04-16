@@ -18,9 +18,22 @@
         text-align: center;
         z-index: 2;
       }
+
+      div.options {
+        position: fixed;
+        background: rgba(0.0,0.0,0.0,0.5);
+      }
+      button {
+
+      }
     </style>
   </head>
   <body>
+    <div class="options">
+      <button onclick="window.game.fxaa = !window.game.fxaa">Toggle FXAA</button>
+    </div>
+
+
     <canvas id="c"></canvas>
     <script src="bundle.js"></script>
   </body>
