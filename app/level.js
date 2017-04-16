@@ -11,7 +11,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 50, height = 50) {
+  constructor(gl, width = 10, height = 10) {
     super(gl);
 
     this.width = width;
@@ -20,7 +20,7 @@ export default class Level extends Renderable {
     this.map = [];
 
     this.atlas = new TileAtlas(gl, {
-      min: gl.LINEAR_MIPMAP_NEAREST,
+      min: gl.NEAREST,
       mag: gl.NEAREST,
       wrap: gl.CLAMP_TO_EDGE,
       src: "mcset.png",
@@ -266,7 +266,7 @@ export default class Level extends Renderable {
       this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
         if(Math.random() < 0.1) {
-          this.map[i][j] = 1;
+          // this.map[i][j] = 1;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
           this.map[i][j] = 1;
         } else {

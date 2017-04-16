@@ -161,7 +161,7 @@ export let levelShader = new Shader(
       float lightIntensity = dot(normal, tempLightDirection);
     
 
-      vec4 diffuseColor = texture2DLodEXT(u_texture, v_texCoord, -1.0);
+      vec4 diffuseColor = texture2D(u_texture, v_texCoord);
       
       // if(diffuseColor.a < 0.5) discard;
 
