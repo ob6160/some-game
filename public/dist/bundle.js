@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 4);
+/******/ 	return __webpack_require__(__webpack_require__.s = 5);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -8832,6 +8832,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
 
 const mat4 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.m4;
+const vec3 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.v3;
 
 class Camera {
   constructor(position, target, up) {
@@ -8845,6 +8846,23 @@ class Camera {
     this.position = position;
     this.target = target;
     this.up = up;
+  }
+
+  updateVectors(front, up) {
+    let newLookAt = vec3.create();
+    newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
+    newLookAt[1] = Math.sin(front[1]);
+    newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
+
+    this.front = vec3.normalize(newLookAt);
+    this.right = vec3.normalize(vec3.cross(this.front, up));
+    this.up    = vec3.normalize(vec3.cross(this.right, this.front));
+
+    vec3.add(this.position, newLookAt, this.target);
+  }
+
+  moveBy(vector) {
+    vec3.add(this.position, vector, this.position);
   }
 
   get view() {
@@ -8863,10 +8881,32 @@ class Camera {
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+class Input {
+  constructor(codes) {
+    let pressed = Object.create(null);
+    function handler(event) {
+      if (codes.hasOwnProperty(event.keyCode)) {
+        pressed[codes[event.keyCode]] = (event.type === "keydown");
+        event.preventDefault();
+      }
+    }
+    addEventListener("keydown", handler);
+    addEventListener("keyup", handler);
+    return pressed;
+  }
+}
+/* harmony export (immutable) */ __webpack_exports__["a"] = Input;
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__renderable__ = __webpack_require__(5);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__tileatlas__ = __webpack_require__(7);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__renderable__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__tileatlas__ = __webpack_require__(8);
 
 
 
@@ -8880,7 +8920,7 @@ const TOP = 1,
       FRONT = 32;
 
 class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */] {
-  constructor(gl, width = 50, height = 50) {
+  constructor(gl, width = 10, height = 10) {
     super(gl);
 
     this.width = width;
@@ -8889,10 +8929,11 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     this.map = [];
 
     this.atlas = new __WEBPACK_IMPORTED_MODULE_2__tileatlas__["a" /* default */](gl, {
-      minMag: gl.NEAREST,
+      min: gl.NEAREST,
+      mag: gl.NEAREST,
       wrap: gl.CLAMP_TO_EDGE,
-      src: "Wolf3DWallSheet.png",
-    }, 64, 384, 1152, 0, 0);
+      src: "mcset.png",
+    }, 16, 256, 256, 0, 0);
     this.uniforms['u_texture'] = this.atlas.texture;
 
     this.constructMap();
@@ -9134,7 +9175,7 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
       this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
         if(Math.random() < 0.1) {
-          this.map[i][j] = 1;
+          // this.map[i][j] = 1;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
           this.map[i][j] = 1;
         } else {
@@ -9148,12 +9189,13 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
 
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "b", function() { return postprocessShader; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return levelShader; });
 
 
@@ -9189,6 +9231,82 @@ class Shader {
 
 
 // Shader Instances
+// FXAA
+let postprocessShader = new Shader(
+`
+
+  attribute vec3 a_position;
+
+  void main(void)
+  {
+    gl_Position = vec4(a_position, 1.0);
+  }
+`,
+`
+  precision highp float;
+  uniform sampler2D u_texture;
+  uniform vec2 u_viewportSize;
+  
+  /* Basic FXAA implementation based on the code on geeks3d.com with the
+     modification that the texture2DLod stuff was removed since it's
+     unsupported by WebGL. */
+  
+  #define FXAA_REDUCE_MIN   (1.0/ 128.0)
+  #define FXAA_REDUCE_MUL   (1.0 / 16.0)
+  #define FXAA_SPAN_MAX     8.0
+  
+  vec4 applyFXAA(vec2 fragCoord, sampler2D tex)
+  {
+      vec4 color;
+      vec2 inverseVP = vec2(1.0 / u_viewportSize.x, 1.0 / u_viewportSize.y);
+      vec3 rgbNW = texture2D(tex, (fragCoord + vec2(-1.0, -1.0)) * inverseVP).xyz;
+      vec3 rgbNE = texture2D(tex, (fragCoord + vec2(1.0, -1.0)) * inverseVP).xyz;
+      vec3 rgbSW = texture2D(tex, (fragCoord + vec2(-1.0, 1.0)) * inverseVP).xyz;
+      vec3 rgbSE = texture2D(tex, (fragCoord + vec2(1.0, 1.0)) * inverseVP).xyz;
+      vec3 rgbM  = texture2D(tex, fragCoord  * inverseVP).xyz;
+      vec3 luma = vec3(0.299, 0.587, 0.114);
+      float lumaNW = dot(rgbNW, luma);
+      float lumaNE = dot(rgbNE, luma);
+      float lumaSW = dot(rgbSW, luma);
+      float lumaSE = dot(rgbSE, luma);
+      float lumaM  = dot(rgbM,  luma);
+      float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+      float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+      
+      vec2 dir;
+      dir.x = -((lumaNW + lumaNE) - (lumaSW + lumaSE));
+      dir.y =  ((lumaNW + lumaSW) - (lumaNE + lumaSE));
+      
+      float dirReduce = max((lumaNW + lumaNE + lumaSW + lumaSE) *
+                            (0.25 * FXAA_REDUCE_MUL), FXAA_REDUCE_MIN);
+      
+      float rcpDirMin = 1.0 / (min(abs(dir.x), abs(dir.y)) + dirReduce);
+      dir = min(vec2(FXAA_SPAN_MAX, FXAA_SPAN_MAX),
+                max(vec2(-FXAA_SPAN_MAX, -FXAA_SPAN_MAX),
+                dir * rcpDirMin)) * inverseVP;
+        
+      vec3 rgbA = 0.5 * (
+          texture2D(tex, fragCoord * inverseVP + dir * (1.0 / 3.0 - 0.5)).xyz +
+          texture2D(tex, fragCoord * inverseVP + dir * (2.0 / 3.0 - 0.5)).xyz);
+      vec3 rgbB = rgbA * 0.5 + 0.25 * (
+          texture2D(tex, fragCoord * inverseVP + dir * -0.5).xyz +
+          texture2D(tex, fragCoord * inverseVP + dir * 0.5).xyz);
+  
+      float lumaB = dot(rgbB, luma);
+      if ((lumaB < lumaMin) || (lumaB > lumaMax))
+          color = vec4(rgbA, 1.0);
+      else
+          color = vec4(rgbB, 1.0);
+      return color;
+  }
+
+  void main(void)
+  {
+      gl_FragColor = applyFXAA(gl_FragCoord.xy, u_texture);
+  }
+`
+);
+
 
 // Generic
 let levelShader = new Shader(
@@ -9228,32 +9346,34 @@ let levelShader = new Shader(
       v_normal = mat3(transpose(u_projection)) * a_normal;
     }
     
-`,
-`
-    precision mediump float;
+`,` #extension GL_EXT_shader_texture_lod : enable
+    #extension GL_OES_standard_derivatives : enable
+    precision highp float;
+    
     varying vec2 v_texCoord;
     varying vec3 v_normal;
-    
+
     uniform sampler2D u_texture;
-    
+  
     void main() {
       vec3 tempLightDirection = vec3(0.9, 0.5, 0.5);
       vec3 normal = normalize(v_normal);
     
       float lightIntensity = dot(normal, tempLightDirection);
     
+
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
       
       // if(diffuseColor.a < 0.5) discard;
-      
+
       gl_FragColor = diffuseColor;
       
-      gl_FragColor.rgb *= clamp(lightIntensity, 0.3, 0.8);
+      gl_FragColor.rgb *= clamp(lightIntensity, 0.3, 0.9);
     }
 `);
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -9261,14 +9381,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__camera__ = __webpack_require__(1);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__level__ = __webpack_require__(2);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__shaders__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__level__ = __webpack_require__(3);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__input__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__shaders__ = __webpack_require__(4);
 
 
 const mat4 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.m4;
 const vec3 = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.v3;
 
 // Class imports
+
 
 
 
@@ -9284,7 +9406,8 @@ class Game {
     };
 
     this.glContextSetup = {
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
+      premultipliedAlpha: false,
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -9298,6 +9421,18 @@ class Game {
         this.glContextSetup
     );
 
+    window.game = {
+      fxaa: false,
+    };
+
+    this.gl.enable(this.gl.BLEND);
+    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+
+    this.gl.getExtension('OES_standard_derivatives');
+    this.gl.getExtension('EXT_shader_texture_lod');
+
+    let fps = 60.0;
+
     this.sceneSettings = {
       projection: {
         fov: 45 * Math.PI / 180,
@@ -9310,6 +9445,22 @@ class Game {
         target: [0, 0, 100],
         up: [0, 1, 0],
         front: [0, 0, 0],
+      },
+      display: {
+        fps: fps,
+        step: 1 / fps,
+        dt: 0,
+        last: Game.timestamp(),
+      },
+      arrowCodes: {
+        37: "left",
+        38: "up",
+        39: "right",
+        40: "down",
+        87: "w",
+        83: "s",
+        68: "d",
+        65: "a",
       }
     };
 
@@ -9323,29 +9474,116 @@ class Game {
         this.sceneSettings.camera.up
     );
 
+    // Postprocessing
+    this.displayBuffer = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.primitives.createXYQuadBufferInfo(this.gl, 0, 0, 0);
+
+    this.fxaaFBOBuffer = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createFramebufferInfo(this.gl, undefined, this.gl.canvas.clientWidth, this.gl.canvas.clientHeight);
+    __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.bindFramebufferInfo(this.gl, null);
+
     // Scene
     this.level = new __WEBPACK_IMPORTED_MODULE_2__level__["a" /* default */](this.gl);
-    this.bufferInfo = this.level.constructBuffers(this.gl);
+    this.levelBufferInfo = this.level.constructBuffers(this.gl);
 
     // Shaders
-    __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* levelShader */].setup(this.gl, this.sharedUniforms);
+    __WEBPACK_IMPORTED_MODULE_4__shaders__["a" /* levelShader */].setup(this.gl, this.sharedUniforms);
+    __WEBPACK_IMPORTED_MODULE_4__shaders__["b" /* postprocessShader */].setup(this.gl, this.sharedUniforms);
 
     // Shared Shader Uniforms Init
     this.sharedUniforms = {
       u_projection: this.projection,
       u_view: this.camera.view,
-      u_model: mat4.identity()
+      u_model: mat4.identity(),
+      u_viewportSize: [this.gl.canvas.clientWidth, this.gl.canvas.clientHeight],
+      u_texture: this.fxaaFBOBuffer.attachments[0],
     };
 
   }
 
-  render() {
+  static timestamp() {
+    if (window.performance && window.performance.now)
+      return window.performance.now();
+    else
+      return new Date().getTime();
+  }
+
+  gameLoop() {
+    let now = Game.timestamp();
+    let step = this.sceneSettings.display.step;
+    let last = this.sceneSettings.display.last;
+
+    let dt = this.sceneSettings.display.dt + Math.min(1, (now - last) / 1000);
+    while(dt > step) {
+      dt = dt - this.sceneSettings.display.step;
+      this.update(step);
+    }
+
+    this.render(this.sceneSettings.display.dt);
+
+    this.sceneSettings.display.dt = dt;
+    this.sceneSettings.display.last = now;
+
+
+    requestAnimationFrame(this.gameLoop.bind(this));
+  }
+
+  update(dt) {
+    let currentPos = this.camera.position;
+    let moveVector = this.movementVector(5.0, dt);
+
+    let collision = false;
+
+
+
+
+
+    moveVector[1] = 0;
+
+    this.camera.moveBy(moveVector);
+    this.camera.updateVectors(this.sceneSettings.camera.front, this.sceneSettings.camera.up, this.sceneSettings.camera.target);
+  }
+
+  movementVector(speed, dt) {
+    let moveVector = vec3.create();
+
+    let left     = this.inputHandler.left || this.inputHandler.a;
+    let right    = this.inputHandler.right || this.inputHandler.d;
+    let forward  = this.inputHandler.up || this.inputHandler.w;
+    let backward = this.inputHandler.down || this.inputHandler.s;
+
+    let vel = speed * dt;
+
+    if(forward) {
+      let forwardMovement = vec3.mulScalar(this.camera.front, vel);
+      vec3.add(moveVector, forwardMovement, moveVector);
+    }
+
+    if(backward) {
+      let backwardMovement = vec3.mulScalar(this.camera.front, -vel);
+      vec3.add(moveVector, backwardMovement, moveVector);
+    }
+
+    if(right) {
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, vel), moveVector);
+    }
+
+    if(left) {
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, -vel), moveVector);
+    }
+
+    return moveVector;
+  }
+
+  render(dt) {
     let gl = this.gl;
-    this.time = this.time + 1 || 0;
+
+    if(window.game.fxaa) {
+      __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.bindFramebufferInfo(gl, this.fxaaFBOBuffer);
+    }
 
     __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
+    gl.cullFace(gl.BACK);
     gl.enable(gl.DEPTH_TEST);
 
     this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -9359,13 +9597,27 @@ class Game {
     this.sharedUniforms.u_view = view;
     this.sharedUniforms.u_model = mat4.identity();
 
-    this.level.render(gl, __WEBPACK_IMPORTED_MODULE_3__shaders__["a" /* levelShader */], this.sharedUniforms);
+    this.level.render(gl, __WEBPACK_IMPORTED_MODULE_4__shaders__["a" /* levelShader */], this.sharedUniforms);
 
-    requestAnimationFrame(this.render.bind(this));
+    if(window.game.fxaa) {
+      __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.bindFramebufferInfo(gl, null);
+      gl.clearColor(0, 0.0, 0, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      gl.useProgram(__WEBPACK_IMPORTED_MODULE_4__shaders__["b" /* postprocessShader */].program);
+
+      __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.setBuffersAndAttributes(gl, __WEBPACK_IMPORTED_MODULE_4__shaders__["b" /* postprocessShader */].programInfo, this.displayBuffer);
+      this.sharedUniforms['u_texture'] = this.fxaaFBOBuffer.attachments[0];
+      __WEBPACK_IMPORTED_MODULE_4__shaders__["b" /* postprocessShader */].uniforms = this.sharedUniforms;
+
+      __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.drawBufferInfo(gl, this.displayBuffer);
+    }
   }
 
   setupEvents() {
     let canvas = this.gl.canvas;
+
+    // Input Keys
+    this.inputHandler = new __WEBPACK_IMPORTED_MODULE_3__input__["a" /* default */](this.sceneSettings.arrowCodes);
 
     // Pointerlock support
     {
@@ -9387,7 +9639,6 @@ class Game {
 
   handleMouseMove(e) {
     let front = this.sceneSettings.camera.front;
-
     front[0] -= e.movementX * 0.001;
     front[1] -= e.movementY * 0.001;
 
@@ -9401,18 +9652,12 @@ class Game {
     if(front[1] > (Math.PI / 2) - 0.1)
       front[1] = (Math.PI / 2) - 0.1;
 
-    let newLookAt = vec3.create();
-    newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
-    newLookAt[1] = Math.sin(front[1]);
-    newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
 
-    vec3.add(this.sceneSettings.camera.position, newLookAt, this.sceneSettings.camera.target);
-
-    this.camera.cameraInfo = this.camera;
+    this.camera.updateVectors(front, this.sceneSettings.camera.up);
   }
 
   handlePointerlock(canvas) {
-    let boundMove = this.handleMouseMove.bind(this);
+    this.handleMouseMove.bind(this);
 
     if (document.pointerLockElement === canvas ||
         document.mozPointerLockElement === canvas) {
@@ -9444,10 +9689,10 @@ class Game {
 
 let gameInstance = new Game();
 gameInstance.setup("c");
-gameInstance.render();
+gameInstance.gameLoop();
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -9515,7 +9760,7 @@ class Renderable {
 
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -9526,21 +9771,29 @@ class Renderable {
 class Texture {
   constructor(gl, options) {
     this.options = options;
-
     this.texture = __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default.a.createTexture(gl, this.options);
+
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+    // let ext = gl.getExtension("EXT_texture_filter_anisotropic");
+    // if(ext) {
+    //   console.log(ext);
+    //   let max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+    //   gl.texParameteri(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 16);
+    // }
   }
 }
 /* harmony export (immutable) */ __webpack_exports__["a"] = Texture;
 
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__ = __webpack_require__(0);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_twgl_js_dist_3_x_twgl_full__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__texture__ = __webpack_require__(6);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__texture__ = __webpack_require__(7);
 
 
 
@@ -9584,11 +9837,14 @@ class TileAtlas extends __WEBPACK_IMPORTED_MODULE_1__texture__["a" /* default */
     let clipTile = this.clipTile(tileID);
     let x = clipTile[0] + (this.paddingX * this.scaleX * this.scaleY);
     let y = clipTile[1] + (this.paddingY * this.scaleX * this.scaleY);
+
+    let padAmount = 0.005;
+
     return [
-      x + 0.001, (y + this.scaleY) - 0.001,
-      (x + this.scaleX - 0.001), (y + this.scaleY) - 0.001,
-      x + this.scaleX, y + 0.001,
-      x + 0.001, y + 0.001
+      x + padAmount, (y + this.scaleY) - padAmount,
+      (x + this.scaleX - padAmount), (y + this.scaleY) - padAmount,
+      x + this.scaleX - padAmount, y + padAmount,
+      x + padAmount, y + padAmount
     ];
 
   }

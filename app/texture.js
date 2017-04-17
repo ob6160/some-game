@@ -7,10 +7,11 @@ export default class Texture {
 
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
-    let ext = gl.getExtension("EXT_texture_filter_anisotropic");
-    if(ext) {
-      let max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
-      gl.texParameteri(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, max);
-    }
+    // let ext = gl.getExtension("EXT_texture_filter_anisotropic");
+    // if(ext) {
+    //   console.log(ext);
+    //   let max = gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+    //   gl.texParameteri(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 16);
+    // }
   }
 }
