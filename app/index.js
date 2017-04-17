@@ -128,7 +128,7 @@ class Game {
     let dt = this.sceneSettings.display.dt + Math.min(1, (now - last) / 1000);
     while(dt > step) {
       dt = dt - this.sceneSettings.display.step;
-      this.update(dt);
+      this.update(step);
     }
 
     this.render(this.sceneSettings.display.dt);
@@ -141,6 +141,22 @@ class Game {
   }
 
   update(dt) {
+    let currentPos = this.camera.position;
+    let moveVector = this.movementVector(5.0, dt);
+
+    let collision = false;
+
+
+
+
+
+    moveVector[1] = 0;
+
+    this.camera.moveBy(moveVector);
+    this.camera.updateVectors(this.sceneSettings.camera.front, this.sceneSettings.camera.up, this.sceneSettings.camera.target);
+  }
+
+  movementVector(speed, dt) {
     let moveVector = vec3.create();
 
     let left     = this.inputHandler.left || this.inputHandler.a;
@@ -148,29 +164,27 @@ class Game {
     let forward  = this.inputHandler.up || this.inputHandler.w;
     let backward = this.inputHandler.down || this.inputHandler.s;
 
+    let vel = speed * dt;
 
     if(forward) {
-      let forwardMovement = vec3.mulScalar(this.camera.front, 0.1);
+      let forwardMovement = vec3.mulScalar(this.camera.front, vel);
       vec3.add(moveVector, forwardMovement, moveVector);
     }
 
     if(backward) {
-      let backwardMovement = vec3.mulScalar(this.camera.front, -0.1);
+      let backwardMovement = vec3.mulScalar(this.camera.front, -vel);
       vec3.add(moveVector, backwardMovement, moveVector);
     }
 
     if(right) {
-      vec3.add(moveVector, vec3.mulScalar(this.camera.right, 0.1), moveVector);
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, vel), moveVector);
     }
 
     if(left) {
-      vec3.add(moveVector, vec3.mulScalar(this.camera.right, -0.1), moveVector);
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, -vel), moveVector);
     }
 
-    moveVector[1] = 0;
-
-    this.camera.moveBy(moveVector);
-    this.camera.updateVectors(this.sceneSettings.camera.front, this.sceneSettings.camera.up, this.sceneSettings.camera.target);
+    return moveVector;
   }
 
   render(dt) {
