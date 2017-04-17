@@ -50,9 +50,9 @@ export let postprocessShader = new Shader(
      modification that the texture2DLod stuff was removed since it's
      unsupported by WebGL. */
   
-  #define FXAA_REDUCE_MIN   (1.0/ 256.0)
+  #define FXAA_REDUCE_MIN   (1.0/ 128.0)
   #define FXAA_REDUCE_MUL   (1.0 / 16.0)
-  #define FXAA_SPAN_MAX     16.0
+  #define FXAA_SPAN_MAX     8.0
   
   vec4 applyFXAA(vec2 fragCoord, sampler2D tex)
   {

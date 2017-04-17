@@ -6,6 +6,7 @@ const vec3 = twgl.v3;
 // Class imports
 import Camera from './camera';
 import Level from './level';
+import Input from './input';
 
 // Shader Imports
 import { postprocessShader, levelShader } from './shaders'
@@ -35,7 +36,7 @@ class Game {
     );
 
     window.game = {
-      fxaa: true,
+      fxaa: false,
     };
 
     this.gl.enable(this.gl.BLEND);
@@ -44,6 +45,7 @@ class Game {
     this.gl.getExtension('OES_standard_derivatives');
     this.gl.getExtension('EXT_shader_texture_lod');
 
+    let fps = 60.0;
 
     this.sceneSettings = {
       projection: {
@@ -57,6 +59,22 @@ class Game {
         target: [0, 0, 100],
         up: [0, 1, 0],
         front: [0, 0, 0],
+      },
+      display: {
+        fps: fps,
+        step: 1 / fps,
+        dt: 0,
+        last: Game.timestamp(),
+      },
+      arrowCodes: {
+        37: "left",
+        38: "up",
+        39: "right",
+        40: "down",
+        87: "w",
+        83: "s",
+        68: "d",
+        65: "a",
       }
     };
 
@@ -95,9 +113,68 @@ class Game {
 
   }
 
-  render() {
+  static timestamp() {
+    if (window.performance && window.performance.now)
+      return window.performance.now();
+    else
+      return new Date().getTime();
+  }
+
+  gameLoop() {
+    let now = Game.timestamp();
+    let step = this.sceneSettings.display.step;
+    let last = this.sceneSettings.display.last;
+
+    let dt = this.sceneSettings.display.dt + Math.min(1, (now - last) / 1000);
+    while(dt > step) {
+      dt = dt - this.sceneSettings.display.step;
+      this.update(dt);
+    }
+
+    this.render(this.sceneSettings.display.dt);
+
+    this.sceneSettings.display.dt = dt;
+    this.sceneSettings.display.last = now;
+
+
+    requestAnimationFrame(this.gameLoop.bind(this));
+  }
+
+  update(dt) {
+    let moveVector = vec3.create();
+
+    let left     = this.inputHandler.left || this.inputHandler.a;
+    let right    = this.inputHandler.right || this.inputHandler.d;
+    let forward  = this.inputHandler.up || this.inputHandler.w;
+    let backward = this.inputHandler.down || this.inputHandler.s;
+
+
+    if(forward) {
+      let forwardMovement = vec3.mulScalar(this.camera.front, 0.1);
+      vec3.add(moveVector, forwardMovement, moveVector);
+    }
+
+    if(backward) {
+      let backwardMovement = vec3.mulScalar(this.camera.front, -0.1);
+      vec3.add(moveVector, backwardMovement, moveVector);
+    }
+
+    if(right) {
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, 0.1), moveVector);
+    }
+
+    if(left) {
+      vec3.add(moveVector, vec3.mulScalar(this.camera.right, -0.1), moveVector);
+    }
+
+    moveVector[1] = 0;
+
+    this.camera.moveBy(moveVector);
+    this.camera.updateVectors(this.sceneSettings.camera.front, this.sceneSettings.camera.up, this.sceneSettings.camera.target);
+  }
+
+  render(dt) {
     let gl = this.gl;
-    this.time = this.time + 1 || 0;
 
     if(window.game.fxaa) {
       twgl.bindFramebufferInfo(gl, this.fxaaFBOBuffer);
@@ -134,12 +211,13 @@ class Game {
 
       twgl.drawBufferInfo(gl, this.displayBuffer);
     }
-
-    requestAnimationFrame(this.render.bind(this));
   }
 
   setupEvents() {
     let canvas = this.gl.canvas;
+
+    // Input Keys
+    this.inputHandler = new Input(this.sceneSettings.arrowCodes);
 
     // Pointerlock support
     {
@@ -161,7 +239,6 @@ class Game {
 
   handleMouseMove(e) {
     let front = this.sceneSettings.camera.front;
-
     front[0] -= e.movementX * 0.001;
     front[1] -= e.movementY * 0.001;
 
@@ -175,18 +252,12 @@ class Game {
     if(front[1] > (Math.PI / 2) - 0.1)
       front[1] = (Math.PI / 2) - 0.1;
 
-    let newLookAt = vec3.create();
-    newLookAt[0] = Math.sin(front[0]) * Math.cos(front[1]);
-    newLookAt[1] = Math.sin(front[1]);
-    newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
 
-    vec3.add(this.sceneSettings.camera.position, newLookAt, this.sceneSettings.camera.target);
-
-    this.camera.cameraInfo = this.camera;
+    this.camera.updateVectors(front, this.sceneSettings.camera.up);
   }
 
   handlePointerlock(canvas) {
-    let boundMove = this.handleMouseMove.bind(this);
+    this.handleMouseMove.bind(this);
 
     if (document.pointerLockElement === canvas ||
         document.mozPointerLockElement === canvas) {
@@ -218,4 +289,4 @@ class Game {
 
 let gameInstance = new Game();
 gameInstance.setup("c");
-gameInstance.render();
+gameInstance.gameLoop();
