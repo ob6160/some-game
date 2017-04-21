@@ -11,7 +11,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 10, height = 10) {
+  constructor(gl, width = 20, height = 20) {
     super(gl);
 
     this.width = width;
@@ -31,6 +31,36 @@ export default class Level extends Renderable {
     this.generateVertices();
   }
 
+  // Returns a value indicating whether a collision has occured at the specified collision vector.
+  collision(positionVector) {
+    let intersection = false;
+
+    let x = positionVector[0] / 2; // X
+    let y = positionVector[2] / 2; // Z
+
+    let flooredX = Math.floor(x + 0.35);
+    let flooredY = Math.floor(y + 0.35);
+    let ceiledX  = Math.ceil(x - 0.35);
+    let ceiledY  = Math.ceil(y - 0.35);
+
+
+    let tright = this.lookup(ceiledX, ceiledY);
+    let bright = this.lookup(ceiledX, flooredY);
+
+    let tleft  = this.lookup(flooredX, ceiledY);
+    let bleft  = this.lookup(flooredX, flooredY);
+
+    if(tright || bright || tleft || bleft) {
+      intersection = true;
+    }
+
+    return intersection;
+  }
+
+  lookup(x, y) {
+    return this.map[x][y];
+  }
+
   generateVertices() {
     let cubeCount = 0;
     let sideTextures = [];
@@ -38,7 +68,7 @@ export default class Level extends Renderable {
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
         for(let l = 0; l < 6; l++) {
-          sideTextures[l] = Math.round(Math.random() * 80)
+          sideTextures[l] = Math.round(1)
         }
 
         let currentTile = this.map[i][j];
@@ -266,7 +296,7 @@ export default class Level extends Renderable {
       this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
         if(Math.random() < 0.1) {
-          // this.map[i][j] = 1;
+          this.map[i][j] = 1;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
           this.map[i][j] = 1;
         } else {

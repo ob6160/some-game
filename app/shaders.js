@@ -163,7 +163,7 @@ export let levelShader = new Shader(
 
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
       
-      // if(diffuseColor.a < 0.5) discard;
+      if(diffuseColor.a < 0.5) discard;
 
       gl_FragColor = diffuseColor;
       

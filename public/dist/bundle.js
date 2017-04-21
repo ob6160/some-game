@@ -8940,6 +8940,39 @@ class Level extends __WEBPACK_IMPORTED_MODULE_1__renderable__["a" /* default */]
     this.generateVertices();
   }
 
+  // Returns a value indicating whether a collision has occured at the specified collision vector.
+  collision(positionVector) {
+    let intersection = false;
+
+    let x = positionVector[0]; // X
+    let y = positionVector[2]; // Z
+
+    let flooredX = Math.floor(x);
+    let flooredY = Math.floor(y);
+    let ceiledX  = Math.ceil(x);
+    let ceiledY  = Math.ceil(y);
+
+
+    let tright = this.lookup(ceiledX, ceiledY);
+    let bright = this.lookup(ceiledX, flooredX);
+
+    let tleft  = this.lookup(flooredX, ceiledY);
+    let bleft  = this.lookup(flooredX, flooredY);
+    
+    let ncorner = this.lookup(flooredX, flooredY);
+    let fcorner = this.lookup(ceiledX, ceiledY);
+
+    if(tright || bright || tleft || bleft || ncorner || fcorner) {
+      intersection = true;
+    }
+
+    return intersection;
+  }
+
+  lookup(x, y) {
+    return this.map[x][y];
+  }
+
   generateVertices() {
     let cubeCount = 0;
     let sideTextures = [];
@@ -9364,7 +9397,7 @@ let levelShader = new Shader(
 
       vec4 diffuseColor = texture2D(u_texture, v_texCoord);
       
-      // if(diffuseColor.a < 0.5) discard;
+      if(diffuseColor.a < 0.5) discard;
 
       gl_FragColor = diffuseColor;
       
@@ -9425,8 +9458,8 @@ class Game {
       fxaa: false,
     };
 
-    this.gl.enable(this.gl.BLEND);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    // this.gl.enable(this.gl.BLEND);
+    // this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
     this.gl.getExtension('OES_standard_derivatives');
     this.gl.getExtension('EXT_shader_texture_lod');
@@ -9530,10 +9563,12 @@ class Game {
     let currentPos = this.camera.position;
     let moveVector = this.movementVector(5.0, dt);
 
+    let tempPos = vec3.add(currentPos, moveVector, currentPos);
+
     let collision = false;
 
 
-
+    console.log(tempPos);
 
 
     moveVector[1] = 0;

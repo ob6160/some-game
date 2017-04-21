@@ -39,8 +39,8 @@ class Game {
       fxaa: false,
     };
 
-    this.gl.enable(this.gl.BLEND);
-    this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+    // this.gl.enable(this.gl.BLEND);
+    // this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
     this.gl.getExtension('OES_standard_derivatives');
     this.gl.getExtension('EXT_shader_texture_lod');
@@ -144,11 +144,20 @@ class Game {
     let currentPos = this.camera.position;
     let moveVector = this.movementVector(5.0, dt);
 
-    let collision = false;
+    let moveVectorX = moveVector.slice(0);
+    let moveVectorZ = moveVector.slice(0);
 
+    moveVectorX[1] = moveVectorX[2] = 0;
+    moveVectorZ[0] = moveVectorZ[1] = 0;
 
+    let tempPosX = vec3.add(currentPos, moveVectorX, []);
+    let tempPosZ = vec3.add(currentPos, moveVectorZ, []);
 
+    let collisionX = this.level.collision(tempPosX);
+    let collisionZ = this.level.collision(tempPosZ);
 
+    if(collisionX) moveVector[0] = 0;
+    if(collisionZ) moveVector[2] = 0;
 
     moveVector[1] = 0;
 
