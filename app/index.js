@@ -45,7 +45,7 @@ class Game {
     this.gl.getExtension('OES_standard_derivatives');
     this.gl.getExtension('EXT_shader_texture_lod');
 
-    let fps = 60.0;
+    let fps = 95.0;
 
     this.sceneSettings = {
       projection: {
@@ -59,6 +59,7 @@ class Game {
         target: [0, 0, 100],
         up: [0, 1, 0],
         front: [0, 0, 0],
+        lockY: true,
       },
       display: {
         fps: fps,
@@ -142,7 +143,7 @@ class Game {
 
   update(dt) {
     let currentPos = this.camera.position;
-    let moveVector = this.movementVector(5.0, dt);
+    let moveVector = this.movementVector(10.0, dt);
 
     let moveVectorX = moveVector.slice(0);
     let moveVectorZ = moveVector.slice(0);

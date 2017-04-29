@@ -11,7 +11,7 @@ const TOP = 1,
       FRONT = 32;
 
 export default class Level extends Renderable {
-  constructor(gl, width = 20, height = 20) {
+  constructor(gl, width = 10, height = 10) {
     super(gl);
 
     this.width = width;
@@ -20,11 +20,11 @@ export default class Level extends Renderable {
     this.map = [];
 
     this.atlas = new TileAtlas(gl, {
-      min: gl.NEAREST,
-      mag: gl.NEAREST,
+      min: gl.LINEAR_MIPMAP_LINEAR,
+      mag: gl.LINEAR,
       wrap: gl.CLAMP_TO_EDGE,
-      src: "mcset.png",
-    }, 16, 256, 256, 0, 0);
+      src: "wall.jpg",
+    }, 512, 512, 512, 0, 0);
     this.uniforms['u_texture'] = this.atlas.texture;
 
     this.constructMap();
@@ -42,7 +42,6 @@ export default class Level extends Renderable {
     let flooredY = Math.floor(y + 0.35);
     let ceiledX  = Math.ceil(x - 0.35);
     let ceiledY  = Math.ceil(y - 0.35);
-
 
     let tright = this.lookup(ceiledX, ceiledY);
     let bright = this.lookup(ceiledX, flooredY);
@@ -67,8 +66,9 @@ export default class Level extends Renderable {
 
     for(let i = 0; i < this.width; i++) {
       for(let j = 0; j < this.height; j++) {
+
         for(let l = 0; l < 6; l++) {
-          sideTextures[l] = Math.round(1)
+          sideTextures[l] = Math.round(0)
         }
 
         let currentTile = this.map[i][j];
@@ -296,9 +296,9 @@ export default class Level extends Renderable {
       this.map[i] = new Int8Array(this.height);
       for(let j = 0; j < this.height; j++) {
         if(Math.random() < 0.1) {
-          this.map[i][j] = 1;
+          this.map[i][j] = 0;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
-          this.map[i][j] = 1;
+          this.map[i][j] = 0;
         } else {
           this.map[i][j] = 0;
         }

@@ -3,10 +3,11 @@ const mat4 = twgl.m4;
 const vec3 = twgl.v3;
 
 export default class Camera {
-  constructor(position, target, up) {
+  constructor(position, target, up, lockY = true) {
     this.position = position;
     this.target = target;
     this.up = up;
+    this.lockY = lockY;
   }
 
   set cameraInfo(info) {
@@ -22,7 +23,11 @@ export default class Camera {
     newLookAt[1] = Math.sin(front[1]);
     newLookAt[2] = Math.cos(front[0]) * Math.cos(front[1]);
 
-    this.front = vec3.normalize(newLookAt);
+    if(this.lockY) newLookAt[1] = 0;
+
+    let tempLook = newLookAt.slice();
+    tempLook[1] = 0;
+    this.front = vec3.normalize(tempLook);
     this.right = vec3.normalize(vec3.cross(this.front, up));
     this.up    = vec3.normalize(vec3.cross(this.right, this.front));
 
