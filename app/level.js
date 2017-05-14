@@ -20,11 +20,11 @@ export default class Level extends Renderable {
     this.map = [];
 
     this.atlas = new TileAtlas(gl, {
-      min: gl.LINEAR_MIPMAP_LINEAR,
-      mag: gl.LINEAR,
+      min: gl.NEAREST,
+      mag: gl.NEAREST,
       wrap: gl.CLAMP_TO_EDGE,
-      src: "wall.jpg",
-    }, 512, 512, 512, 0, 0);
+      src: "mcset.png",
+    }, 16, 256, 256, 0, 0);
     this.uniforms['u_texture'] = this.atlas.texture;
 
     this.constructMap();
@@ -68,7 +68,7 @@ export default class Level extends Renderable {
       for(let j = 0; j < this.height; j++) {
 
         for(let l = 0; l < 6; l++) {
-          sideTextures[l] = Math.round(0)
+          sideTextures[l] = Math.round(Math.random()*11)
         }
 
         let currentTile = this.map[i][j];
@@ -298,7 +298,7 @@ export default class Level extends Renderable {
         if(Math.random() < 0.1) {
           this.map[i][j] = 0;
         } else if(i === 0 || i === this.width - 1 || j === 0 || j === this.height - 1) {
-          this.map[i][j] = 0;
+          this.map[i][j] = 1;
         } else {
           this.map[i][j] = 0;
         }
